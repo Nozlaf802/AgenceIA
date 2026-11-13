@@ -9,9 +9,10 @@ Carte unique du MVP de **Lumen, le dernier phare**. Elle est conçue pour Phaser
 | Fichier | Rôle |
 |---|---|
 | `falaise_du_phare.tmj` | La carte Tiled (JSON). Le tileset est intégré, parce que Phaser 3 ne lit pas les tilesets externes |
-| `tileset_falaise_provisoire.png` | Tileset **provisoire** (couleurs unies, tuiles de 32 px). Le DA le remplace par le sien |
+| `tileset_falaise_etendu.png` | **Tileset utilisé par la carte** : tuiles 1 à 28 du DA (PR #8), plus les bordures 29 à 52 dérivées automatiquement de ses tuiles, plus la tuile 53 transparente (collision invisible) |
+| `tileset_falaise_provisoire.png` | Même grille en couleurs unies (repli si les assets du DA manquent) |
 | `apercu_falaise_du_phare.png` | Plan annoté |
-| `tools/generer_carte.py` | Générateur (Python + Pillow + numpy). Pour modifier la carte, on édite le script et on le relance. Le résultat est toujours le même |
+| `tools/generer_carte.py` | Générateur (Python + Pillow + numpy). Pour modifier la carte, on édite le script et on le relance. Le résultat est toujours le même. Option `--assets <dossier>` (par défaut `public/assets/` du dépôt) pour lire le tileset et les sprites du DA |
 
 ## Dimensions
 
@@ -38,7 +39,8 @@ Six chemins de terre relient les zones. Le générateur garantit qu'aucun obstac
 1. `sol` : eau, sable, herbe, chemins, dalles, falaise. L'eau et la falaise **bloquent**.
 2. `deco` : décor non bloquant (fleurs, cailloux, filets…).
 3. `obstacles` : tout ce qui bloque (rochers, murs, menhirs, barques, pins, phare, caisses, braseros).
-4. `dessus` : affiché **au-dessus** des personnages (haut du phare, feuillage des pins). Propriété `depth = 100`.
+4. `dessus` : affiché **au-dessus** des personnages (feuillage des pins). Propriété `depth = 100`.
+5. `obstacles_tuiles` (**cachée**) : la version « tout en tuiles » des obstacles (phare, barques, braseros, caisses). Elle sert de repli si on ne veut pas des sprites.
 
 **Couches d'objets :**
 
@@ -49,6 +51,7 @@ Six chemins de terre relient les zones. Le générateur garantit qu'aucun obstac
 | `boss` | `boss_spawn`, `boss_arena` | Point d'apparition de La Marée. Rectangle d'arène de 48 × 30 tuiles (1 536 × 960 px), `fermeture_sec = 530` |
 | `lucioles` | `firefly_zone` | 5 rectangles où faire apparaître les lucioles au sol, avec un `poids` (l'esplanade vaut 3) |
 | `zones` | `zone` | Les 5 zones nommées (statistiques, ambiance sonore, nom affiché) |
+| `decors` | `prop` | 34 sprites du DA posés en objets image : phare, 7 barques, 5 braseros, 8 caisses, 13 rochers. Propriétés `key` (clé du manifest), `originX`, `originY`, `angle`, `scale`, `flipX`, `depth` |
 | `lumieres` | `light` | 7 braseros (`rayon_px`, `couleur`, `intensite`) et le phare (`allume_a_sec = -1` : il s'allume à la victoire) |
 
 ## Code Phaser minimal
@@ -56,7 +59,7 @@ Six chemins de terre relient les zones. Le générateur garantit qu'aucun obstac
 ```js
 // preload
 this.load.tilemapTiledJSON('falaise', 'maps/falaise_du_phare.tmj');
-this.load.image('tiles_falaise', 'maps/tileset_falaise_provisoire.png');
+this.load.image('tiles_falaise', 'maps/tileset_falaise_etendu.png');
 
 // create
 const map = this.make.tilemap({ key: 'falaise' });
@@ -70,13 +73,21 @@ obstacles.setCollisionByProperty({ collides: true });
 this.physics.add.collider(lumen, [sol, obstacles]);
 this.physics.add.collider(ennemis, [sol, obstacles]);
 
+// décors du DA (sprites props/ chargés via manifest.props)
+for (const o of map.getObjectLayer('decors').objects) {
+  const p = Object.fromEntries(o.properties.map(q => [q.name, q.value]));
+  this.add.image(o.x, o.y, p.key).setOrigin(p.originX, p.originY)
+    .setAngle(p.angle).setScale(p.scale).setFlipX(!!p.flipX).setDepth(p.depth);
+}
+// trier les personnages par y : sprite.setDepth(sprite.y) à chaque frame
+
 const depart = map.findObject('joueur', o => o.type === 'player_start');
 const spawns = map.getObjectLayer('apparitions').objects;
 this.physics.world.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 this.cameras.main.setBounds(0, 0, map.widthInPixels, map.heightInPixels);
 ```
 
-Je l'ai testé dans Chromium sans écran avec Phaser 3.80.1 : la carte se charge, les 4 couches et les 6 couches d'objets sont présentes, et les collisions sont actives.
+Je l'ai testé dans Chromium sans écran avec Phaser 3.80.1, avec le tileset et les sprites du DA : la carte se charge, les couches et les décors s'affichent, et les collisions sont actives.
 
 ## Règles d'utilisation pour le Développeur
 
@@ -85,6 +96,12 @@ Je l'ai testé dans Chromium sans écran avec Phaser 3.80.1 : la carte se charge
 - **Taille des ennemis** : tous les points d'apparition sont accessibles à un ennemi de 2 × 2 tuiles (l'Ombre lourde, les mini-boss). C'est vérifié par le script.
 - **Arène du boss** : à 8:50, un mur de brume infranchissable se forme sur le contour de `arene_boss`. La caméra peut rester libre, l'arène fait 1,2 écran. Les vagues de La Marée **traversent** les obstacles : le phare ne sert pas d'abri.
 - **Lucioles au sol** : toutes les 10 s, tirer une zone `firefly_zone` selon son poids, puis une position praticable dans cette zone, entre 300 et 600 px de Lumen.
+
+## Bordures et décors en sprites
+
+- **Bordures automatiques** : le générateur pose une tuile de transition partout où l'herbe touche le sable ou un chemin, et où le sable touche l'eau. Ça fait 566 tuiles. Quand la matière voisine touche 3 côtés, ou 2 côtés opposés, la tuile prend directement cette matière. Les bordures 29 à 52 sont fabriquées à partir des tuiles du DA (frange ondulée de 8 à 11 px). Si le DA dessine les siennes aux mêmes positions dans `tileset_falaise.png`, le générateur les reprend telles quelles.
+- **Sprites** : le phare (échelle 1,25), les barques, les braseros et les caisses sont des objets image. Sous eux, la couche `obstacles` porte la tuile 53 (transparente, mais bloquante). La collision du phare est un disque de 2,6 tuiles de rayon, à la largeur du pied du sprite. Les barques font 4 × 2 tuiles, ou 2 × 4 pour celles tournées de 90°.
+- **Gros rochers** : les tuiles `rocher_gros` du DA restent **visibles**, et 13 sprites `rocher_grand` sont posés par-dessus pour le relief. J'ai essayé de remplacer les amas entiers par des sprites. Ça donnait soit un motif répétitif en « boîte à œufs », soit des murs invisibles sur les bords irréguliers. Le mélange est plus lisible pour le joueur.
 
 ## Contrat de tuiles (pour le DA)
 
@@ -120,5 +137,12 @@ Le DA peut redessiner librement l'image du tileset, à une condition : **garder 
 | 26 | feuillage_pin | | dessus |
 | 27 | phare_haut | | dessus |
 | 28 | (réserve) | | dessus |
+| 29-36 | herbe_sable_n, _e, _s, _o, _ne, _se, _so, _no | | sol |
+| 37-44 | herbe_chemin_n … _no (même ordre) | | sol |
+| 45-52 | sable_ecume_n … _no (même ordre) | | sol |
+| 53 | collision_invisible (transparente) | oui | obstacles |
+| 54-56 | (réserve) | | sol |
 
-Les obstacles de plusieurs tuiles (phare, gros rochers, barques) sont pour l'instant faits de tuiles identiques. Quand le DA aura des sprites dédiés, deux options sont possibles. On peut découper le sprite en tuiles et garder ses ID dans la couche `obstacles`. On peut aussi poser le sprite en objet image et garder les tuiles comme collisions invisibles.
+Le tileset passe ainsi à 56 cases (8 colonnes × 7 lignes). Dans chaque série, la tuile porte le sol de base, et la frange de la matière voisine se trouve du côté indiqué : `_n` = frange en haut, `_ne` = coin haut-droite, etc.
+
+Remarque pour le DA : dans `props/phare.png`, la lanterne du phare est allumée. Or, dans l'histoire, le phare est éteint jusqu'à la victoire. Il faudrait une variante `phare_eteint` (le jeu bascule sur `phare` à la victoire). La clé est déjà prévue côté carte : il suffit de changer `key`.

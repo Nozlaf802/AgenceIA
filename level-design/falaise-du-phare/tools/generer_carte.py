@@ -10,6 +10,7 @@ Produit, dans le dossier parent :
 Usage : python3 generer_carte.py   (Python 3.9+, Pillow, numpy)
 Le résultat est déterministe : relancer donne exactement la même carte.
 """
+import argparse
 import json
 import math
 import os
@@ -20,6 +21,14 @@ from PIL import Image, ImageDraw, ImageFont
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 SORTIE = os.path.dirname(ICI)
+RACINE = os.path.dirname(os.path.dirname(SORTIE))
+
+ap = argparse.ArgumentParser(description="Génère la carte Falaise du Phare")
+ap.add_argument("--assets", default=os.path.join(RACINE, "public", "assets"),
+                help="dossier des assets du DA (contient tiles/tileset_falaise.png et props/)")
+ARGS = ap.parse_args()
+TILESET_DA = os.path.join(ARGS.assets, "tiles", "tileset_falaise.png")
+PROPS_DIR = os.path.join(ARGS.assets, "props")
 
 W, H = 160, 100          # tuiles (5120 x 3200 px = 4 écrans de large, 4,4 de haut)
 T = 32                   # taille d'une tuile en px
@@ -59,6 +68,26 @@ TUILES = [
     (26, "feuillage_pin",  False, "dessus",    (34, 72, 54)),
     (27, "phare_haut",     False, "dessus",    (236, 232, 222)),
     (28, "reserve_dessus", False, "dessus",    (255, 0, 255)),
+]
+# 29-52 : bordures automatiques (proposées par le DA). Ordre dans chaque série :
+# n, e, s, o (côtés), ne, se, so, no (coins). La tuile porte le sol de base et une
+# frange de la matière voisine du côté indiqué.
+DIRS = ["n", "e", "s", "o", "ne", "se", "so", "no"]
+BORDURES = [  # (préfixe, gid de base, gid de la frange, couleur provisoire de la frange)
+    ("herbe_sable", 4, 3, (176, 160, 122)),
+    ("herbe_chemin", 4, 6, (110, 92, 70)),
+    ("sable_ecume", 3, 2, (52, 86, 118)),
+]
+_gid = 29
+for pre, base, frange, col in BORDURES:
+    for d in DIRS:
+        TUILES.append((_gid, f"{pre}_{d}", False, "sol", col))
+        _gid += 1
+TUILES += [
+    (53, "collision_invisible", True,  "obstacles", (0, 0, 0)),
+    (54, "reserve_54",          False, "sol",       (255, 0, 255)),
+    (55, "reserve_55",          False, "sol",       (255, 0, 255)),
+    (56, "reserve_56",          False, "sol",       (255, 0, 255)),
 ]
 G = {nom: gid for gid, nom, *_ in TUILES}
 COLLIDE = {gid for gid, _, c, *_ in TUILES if c}
@@ -151,8 +180,8 @@ terre = lambda x, y: ile[y, x] and sol[y, x] != G["falaise"]
 # 2. Esplanade du phare (centre, arène du boss)
 # ---------------------------------------------------------------------------
 disque(sol, CX, CY, 15, G["dalles"])
-disque(obs, CX, CY, 4.6, G["phare_base"])
-disque(dessus, CX, CY - 3, 3.2, G["phare_haut"])
+PHARE_R = 2.6  # collision du pied du phare (le sprite du DA fait ~5 tuiles de large à l'échelle 1,25)
+disque(obs, CX, CY, PHARE_R, G["phare_base"])
 # 4 braseros éteints autour du phare (repères visuels + lumière d'ambiance)
 BRASEROS = [(CX - 11, CY - 7), (CX + 10, CY - 7), (CX - 11, CY + 6), (CX + 10, CY + 6)]
 for bx, by in BRASEROS:
@@ -266,7 +295,7 @@ for (tx, ty) in [(122, 20), (127, 17), (131, 22), (118, 24)]:
 # ---------------------------------------------------------------------------
 # 7. SUD : Grève aux barques + ponton
 # ---------------------------------------------------------------------------
-BARQUES = [(46, 82, 5, 2), (58, 86, 2, 5), (92, 84, 5, 2), (104, 80, 2, 5), (116, 84, 5, 2), (66, 78, 5, 2), (36, 76, 2, 4)]
+BARQUES = [(46, 82, 4, 2), (58, 86, 2, 4), (92, 84, 4, 2), (104, 80, 2, 4), (116, 84, 4, 2), (66, 78, 4, 2), (36, 76, 2, 4)]
 for (bx, by, bw, bh) in BARQUES:
     for y in range(by, by + bh):
         for x in range(bx, bx + bw):
@@ -284,6 +313,43 @@ for y in range(PONTON[1], PONTON[3] + 1):
 
 # re-tracer les chemins pour garantir qu'aucun obstacle ne les coupe
 tracer_chemins()
+
+
+# ---------------------------------------------------------------------------
+# 7 bis. Bordures automatiques (herbe->sable, herbe->chemin, sable->écume)
+# ---------------------------------------------------------------------------
+def bordures(bases, cibles, prefixe, convertir_en=None):
+    """Pose une tuile de bordure sur chaque tuile `bases` voisine d'une tuile `cibles`.
+    Si la cible touche 3 côtés ou 2 côtés opposés, la tuile devient `convertir_en` (ou reste telle quelle)."""
+    src = sol.copy()
+    n_pose = 0
+    for y in range(1, H - 1):
+        for x in range(1, W - 1):
+            if src[y, x] not in bases:
+                continue
+            v = {"n": src[y - 1, x] in cibles, "e": src[y, x + 1] in cibles,
+                 "s": src[y + 1, x] in cibles, "o": src[y, x - 1] in cibles}
+            k = [d for d in ("n", "e", "s", "o") if v[d]]
+            if not k:
+                continue
+            if len(k) >= 3 or set(k) in ({"n", "s"}, {"e", "o"}):
+                if convertir_en:
+                    sol[y, x] = convertir_en
+                continue
+            if len(k) == 1:
+                d = k[0]
+            else:
+                d = {frozenset("ne"): "ne", frozenset("es"): "se", frozenset("so"): "so", frozenset("on"): "no"}[frozenset("".join(k))]
+            sol[y, x] = G[f"{prefixe}_{d}"]
+            n_pose += 1
+    return n_pose
+
+
+HERBES = {G["herbe"], G["herbe_sombre"]}
+NB_BORDURES = 0
+NB_BORDURES += bordures(HERBES, {G["chemin_terre"]}, "herbe_chemin", convertir_en=G["chemin_terre"])
+NB_BORDURES += bordures(HERBES, {G["sable"]}, "herbe_sable", convertir_en=G["sable"])
+NB_BORDURES += bordures({G["sable"]}, {G["eau_ecume"], G["eau_profonde"]}, "sable_ecume")
 
 # ---------------------------------------------------------------------------
 # 8. Décor (non bloquant)
@@ -438,6 +504,56 @@ obj_lumieres = [point(f"brasero_{i}", "light", x, y, {"rayon_px": 110, "couleur"
 obj_lumieres.append(point("phare", "light", CX, CY - 3, {"rayon_px": 600, "couleur": "#fff2c0", "intensite": 1.0, "allume_a_sec": -1}))
 
 # ---------------------------------------------------------------------------
+# 10 bis. Décors en objets image (sprites props/ du DA) + collisions invisibles
+# Les tuiles d'origine restent dans la couche cachée « obstacles_tuiles » (repli).
+# ---------------------------------------------------------------------------
+obs_tuiles = obs.copy()
+obj_decors = []
+
+
+def prop(key, px_x, px_y, origin=(0.5, 1.0), angle=0, scale=1.0, depth=None, flip=False):
+    o = point(key, "prop", 0, 0, {"key": key, "originX": float(origin[0]), "originY": float(origin[1]),
+                                  "angle": int(angle), "scale": float(scale), "flipX": int(flip),
+                                  "depth": int(round(px_y if depth is None else depth))})
+    o["x"], o["y"] = round(px_x, 1), round(px_y, 1)
+    obj_decors.append(o)
+
+
+# phare
+prop("phare", CX * T, (CY + PHARE_R) * T + 8, scale=1.25)
+obs[obs == G["phare_base"]] = G["collision_invisible"]
+
+# barques (horizontales 4x2, verticales 2x4 -> sprite tourné de 90°)
+for (bx, by, bw, bh) in BARQUES:
+    cx_, cy_ = (bx + bw / 2) * T, (by + bh / 2) * T
+    if bw >= bh:
+        prop("barque", cx_, (by + bh) * T + 6, depth=(by + bh) * T)
+    else:
+        prop("barque", cx_, cy_, origin=(0.5, 0.55), angle=90, depth=(by + bh) * T)
+obs[obs == G["barque"]] = G["collision_invisible"]
+
+# braseros et caisses
+for y in range(H):
+    for x in range(W):
+        if obs[y, x] == G["brasero"]:
+            prop("brasero", (x + 0.5) * T, (y + 1) * T + 2, scale=0.9)
+            obs[y, x] = G["collision_invisible"]
+        elif obs[y, x] == G["caisse"]:
+            prop("caisse", (x + 0.5) * T, (y + 1) * T + 2, scale=0.62)
+            obs[y, x] = G["collision_invisible"]
+
+# gros rochers : les tuiles « rocher_gros » restent visibles (elles se raccordent et
+# couvrent exactement la collision) ; on pose par-dessus quelques sprites rocher_grand
+# pour le relief. Un sprite seul ne couvre pas un amas irrégulier sans laisser de
+# murs invisibles, d'où ce mélange.
+masque_rocs = obs == G["rocher_gros"]
+for y in range(0, H - 3, 3):
+    for x in range((y // 3) % 2 * 2, W - 4, 4):
+        if masque_rocs[y:y + 3, x:x + 4].sum() >= 9:
+            prop("rocher_grand", (x + 2 + rng.uniform(-0.4, 0.4)) * T, (y + 3) * T,
+                 scale=float(rng.choice([1.0, 1.15, 1.3])), flip=bool(rng.random() < 0.5))
+
+# ---------------------------------------------------------------------------
 # 11. Export Tiled (.tmj)
 # ---------------------------------------------------------------------------
 COLS = 8
@@ -458,7 +574,7 @@ def couche_objets(nom, objs, lid):
 
 
 tileset = {
-    "firstgid": 1, "name": "falaise", "image": "tileset_falaise_provisoire.png",
+    "firstgid": 1, "name": "falaise", "image": "tileset_falaise_etendu.png",
     "imagewidth": COLS * T, "imageheight": ROWS * T, "tilewidth": T, "tileheight": T,
     "columns": COLS, "tilecount": COLS * ROWS, "margin": 0, "spacing": 0,
     "tiles": [{"id": gid - 1, "properties": [
@@ -472,7 +588,7 @@ carte = {
     "type": "map", "version": "1.10", "tiledversion": "1.10.2", "orientation": "orthogonal",
     "renderorder": "right-down", "infinite": False, "compressionlevel": -1,
     "width": W, "height": H, "tilewidth": T, "tileheight": T,
-    "nextlayerid": 11, "nextobjectid": objets_id[0],
+    "nextlayerid": 13, "nextobjectid": objets_id[0],
     "properties": [
         {"name": "nom", "type": "string", "value": "Falaise du Phare"},
         {"name": "version", "type": "string", "value": "1.0"},
@@ -482,6 +598,7 @@ carte = {
         couche_tuiles("sol", sol, 1),
         couche_tuiles("deco", deco, 2),
         couche_tuiles("obstacles", obs, 3),
+        dict(couche_tuiles("obstacles_tuiles", obs_tuiles, 11), visible=False),
         couche_tuiles("dessus", dessus, 4, [{"name": "depth", "type": "int", "value": 100}]),
         couche_objets("joueur", obj_joueur, 5),
         couche_objets("apparitions", obj_apparitions, 6),
@@ -489,19 +606,26 @@ carte = {
         couche_objets("lucioles", obj_lucioles, 8),
         couche_objets("zones", obj_zones, 9),
         couche_objets("lumieres", obj_lumieres, 10),
+        couche_objets("decors", obj_decors, 12),
     ],
 }
 with open(os.path.join(SORTIE, "falaise_du_phare.tmj"), "w", encoding="utf-8") as f:
     json.dump(carte, f, ensure_ascii=False, separators=(",", ":"))
 
 # ---------------------------------------------------------------------------
-# 12. Tileset provisoire
+# 12. Tilesets
+#   - tileset_falaise_provisoire.png : couleurs unies (repli, toujours généré)
+#   - tileset_falaise_etendu.png     : tuiles 1-28 du DA + bordures 29-52 dérivées
+#     automatiquement de ses tuiles (frange ondulée) + tuile 53 transparente.
+#     Le DA peut redessiner les tuiles 29-56 à la main en gardant la grille.
 # ---------------------------------------------------------------------------
 ts = Image.new("RGBA", (COLS * T, ROWS * T), (0, 0, 0, 0))
 d = ImageDraw.Draw(ts)
 for gid, nom, c, couche, col in TUILES:
     i = gid - 1
     x0, y0 = (i % COLS) * T, (i // COLS) * T
+    if nom == "collision_invisible":
+        continue
     if couche in ("sol",):
         d.rectangle([x0, y0, x0 + T - 1, y0 + T - 1], fill=col + (255,))
     elif couche == "deco":
@@ -512,7 +636,61 @@ for gid, nom, c, couche, col in TUILES:
         d.rounded_rectangle([x0 + 2, y0 + 2, x0 + T - 3, y0 + T - 3], radius=6, fill=col + (255,), outline=(20, 20, 24, 255), width=2)
     else:
         d.ellipse([x0 + 1, y0 + 1, x0 + T - 2, y0 + T - 2], fill=col + (200,))
+
+
+def tuile(img, gid):
+    i = gid - 1
+    return img.crop(((i % COLS) * T, (i // COLS) * T, (i % COLS) * T + T, (i // COLS) * T + T))
+
+
+def masque_frange(d):
+    """masque 32x32 : 255 = frange (matière voisine), côté(s) indiqué(s), bord ondulé de ~9 px"""
+    m = np.zeros((T, T), dtype=np.uint8)
+    yy, xx = np.mgrid[0:T, 0:T]
+    def bande(dist_bord, coord):
+        prof = 8 + 2.2 * np.sin(coord * 0.55) + 1.2 * np.sin(coord * 1.3 + 1.0)
+        return dist_bord < prof
+    if "n" in d: m[bande(yy, xx)] = 255
+    if "s" in d: m[bande(T - 1 - yy, xx)] = 255
+    if "e" in d: m[bande(T - 1 - xx, yy)] = 255
+    if "o" in d: m[bande(xx, yy)] = 255
+    return Image.fromarray(m, "L")
+
+
+def bordures_dans(img):
+    for pre, base, frange, _ in BORDURES:
+        for d_ in DIRS:
+            gid = G[f"{pre}_{d_}"]
+            i = gid - 1
+            t_ = tuile(img, base).copy()
+            t_.paste(tuile(img, frange), (0, 0), masque_frange(d_))
+            img.paste(t_, ((i % COLS) * T, (i // COLS) * T))
+    return img
+
+
+ts = bordures_dans(ts)
 ts.save(os.path.join(SORTIE, "tileset_falaise_provisoire.png"))
+
+ets = ts.copy()
+TILESET_SOURCE = "provisoire"
+if os.path.exists(TILESET_DA):
+    da = Image.open(TILESET_DA).convert("RGBA")
+    if da.size[0] >= COLS * T:
+        n_da = min(28, (da.size[0] // T) * (da.size[1] // T))
+        for gid in range(1, n_da + 1):
+            i = gid - 1
+            ets.paste((0, 0, 0, 0), ((i % COLS) * T, (i // COLS) * T, (i % COLS) * T + T, (i // COLS) * T + T))
+            ets.paste(tuile(da, gid), ((i % COLS) * T, (i // COLS) * T))
+        # le DA a déjà dessiné des tuiles au-delà de 28 ? on les garde telles quelles
+        n_tot = (da.size[0] // T) * (da.size[1] // T)
+        ets = bordures_dans(ets)
+        for gid in range(29, min(n_tot, COLS * ROWS) + 1):
+            t_ = tuile(da, gid)
+            if np.array(t_)[:, :, 3].max() > 0:
+                i = gid - 1
+                ets.paste(t_, ((i % COLS) * T, (i // COLS) * T))
+        TILESET_SOURCE = TILESET_DA
+ets.save(os.path.join(SORTIE, "tileset_falaise_etendu.png"))
 
 # ---------------------------------------------------------------------------
 # 13. Aperçu annoté (6 px par tuile)
@@ -582,3 +760,6 @@ ko = [(o, xy) for o, xy in apparitions if not gros_atteint[xy[1], xy[0]]]
 print(f"Apparitions inaccessibles pour un ennemi 2x2 : {len(ko)} {ko}")
 arene_libre = p[ARENE[1]:ARENE[3], ARENE[0]:ARENE[2]].mean()
 print(f"Arène du boss libre à {100*arene_libre:.0f} %")
+print(f"Bordures automatiques posées : {NB_BORDURES} tuiles")
+print(f"Décors en objets image : {len(obj_decors)} ({sum(1 for o in obj_decors if o['name']=='rocher_grand')} rochers)")
+print(f"Tileset étendu construit depuis : {TILESET_SOURCE}")
