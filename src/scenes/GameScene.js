@@ -128,7 +128,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies.getChildren().forEach((e) => {
       if (!e.active) return;
       const d = e.tick(dt, p, time, this.level, lightR);
-      if (d < e.radius + p.radius) {
+      if (d < e.radius + p.radius && !e.isFrozen(this.elapsed)) {
         if (p.hurt(e.dmg)) {
           cam.shake(90, 0.005);
           this.juice.number(p.x, p.y - 20, e.dmg, '#ff6b6b');

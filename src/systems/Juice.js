@@ -40,16 +40,33 @@ export class Juice {
     });
   }
 
+  // Petit effet d'impact animé (feu, givre, foudre). Ignoré si l'animation manque.
+  impact(x, y, anim, scale = 1) {
+    if (!this.scene.anims.exists(anim)) return;
+    let fx = this.fx.find((o) => !o.active);
+    if (!fx) {
+      if (this.fx.length > 60) return;
+      fx = this.makeFx();
+    }
+    fx.setActive(true).setVisible(true).setPosition(x, y).setScale(scale).setRotation(Math.random() * 6.28);
+    fx.play(anim);
+  }
+
+  makeFx() {
+    const fx = this.scene.add.sprite(0, 0, '__DEFAULT').setDepth(DEPTH.fx);
+    fx.on('animationcomplete', () => fx.setActive(false).setVisible(false));
+    this.fx.push(fx);
+    return fx;
+  }
+
   burst(x, y, color, radius = 14) {
     if (this.scene.anims.exists('fx-dissipation')) {
       let fx = this.fx.find((o) => !o.active);
       if (!fx) {
-        if (this.fx.length > 40) return;
-        fx = this.scene.add.sprite(x, y, 'dissipation').setDepth(DEPTH.fx);
-        fx.on('animationcomplete', () => fx.setActive(false).setVisible(false));
-        this.fx.push(fx);
+        if (this.fx.length > 60) return;
+        fx = this.makeFx();
       }
-      fx.setActive(true).setVisible(true).setPosition(x, y).setScale(Math.max(0.5, radius / 20));
+      fx.setActive(true).setVisible(true).setPosition(x, y).setScale(Math.max(0.5, radius / 20)).setRotation(0);
       fx.play('fx-dissipation');
       return;
     }

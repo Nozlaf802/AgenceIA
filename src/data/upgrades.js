@@ -1,5 +1,5 @@
 // Armes et passifs (5 niveaux chacun). Source : GDD v0.1, section 5.
-// Prototype gris : 2 armes (Lanterne, Flamme orbitale) et les 6 passifs.
+// 4 armes (Lanterne, Flamme orbitale, Givre, Foudre) et les 6 passifs.
 
 export const MAX_WEAPONS = 4;
 export const MAX_PASSIVES = 4;
@@ -25,6 +25,31 @@ export const WEAPONS = {
       { dmg: 11, count: 2, radius: 72, speed: 3.2 },
       { dmg: 11, count: 3, radius: 75, speed: 3.2 },
       { dmg: 15, count: 3, radius: 88, speed: 3.7 },
+    ],
+  },
+  // Givre : éclat qui ralentit. Au bout de `freezeHits` coups, la créature gèle
+  // (immobile, ne blesse plus) pendant `freeze` secondes.
+  frost: {
+    name: 'Givre',
+    desc: ['Un éclat de givre ralentit, puis gèle les créatures.', '+1 éclat', 'Traverse 1 créature de plus, gèle en 2 coups', '+1 éclat, +30 % dégâts', 'Gel plus long, tir plus rapide'],
+    levels: [
+      { dmg: 7, cd: 1.3, count: 1, pierce: 1, slow: 0.45, slowDur: 2, freezeHits: 3, freeze: 1.2 },
+      { dmg: 7, cd: 1.3, count: 2, pierce: 1, slow: 0.45, slowDur: 2, freezeHits: 3, freeze: 1.2 },
+      { dmg: 7, cd: 1.25, count: 2, pierce: 2, slow: 0.45, slowDur: 2.2, freezeHits: 2, freeze: 1.6 },
+      { dmg: 9, cd: 1.2, count: 3, pierce: 2, slow: 0.5, slowDur: 2.2, freezeHits: 2, freeze: 1.6 },
+      { dmg: 9, cd: 1.0, count: 3, pierce: 3, slow: 0.5, slowDur: 2.5, freezeHits: 2, freeze: 2 },
+    ],
+  },
+  // Foudre : frappe des créatures au hasard à l'écran, puis rebondit sur les voisines.
+  lightning: {
+    name: 'Foudre',
+    desc: ['La foudre frappe une créature au hasard et rebondit.', '+1 rebond', '+1 éclair', '+35 % dégâts, +1 rebond', '+1 éclair, frappe plus souvent'],
+    levels: [
+      { dmg: 16, cd: 1.8, count: 1, bounces: 2, range: 150 },
+      { dmg: 16, cd: 1.8, count: 1, bounces: 3, range: 150 },
+      { dmg: 16, cd: 1.7, count: 2, bounces: 3, range: 160 },
+      { dmg: 22, cd: 1.6, count: 2, bounces: 4, range: 170 },
+      { dmg: 22, cd: 1.3, count: 3, bounces: 4, range: 180 },
     ],
   },
 };
