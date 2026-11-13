@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { DEPTH } from '../config.js';
 
 // Effets de « juice » : chiffres de dégâts et éclats de brume à la mort.
 export class Juice {
@@ -18,7 +19,7 @@ export class Juice {
       scale: { start: 0.9, end: 0 },
       alpha: { start: 0.9, end: 0 },
       emitting: false,
-    }).setDepth(7);
+    }).setDepth(DEPTH.fx);
   }
 
   number(x, y, value, color = '#fff3c4') {
@@ -28,7 +29,7 @@ export class Juice {
       tx = this.scene.add.text(0, 0, '', {
         fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: '14px', fontStyle: 'bold',
         color: '#ffffff', stroke: '#000000', strokeThickness: 3,
-      }).setOrigin(0.5).setDepth(700);
+      }).setOrigin(0.5).setDepth(DEPTH.text);
       this.texts.push(tx);
     }
     tx.setText(String(Math.round(value))).setColor(color).setPosition(x + Phaser.Math.Between(-6, 6), y)
@@ -44,7 +45,7 @@ export class Juice {
       let fx = this.fx.find((o) => !o.active);
       if (!fx) {
         if (this.fx.length > 40) return;
-        fx = this.scene.add.sprite(x, y, 'dissipation').setDepth(6);
+        fx = this.scene.add.sprite(x, y, 'dissipation').setDepth(DEPTH.fx);
         fx.on('animationcomplete', () => fx.setActive(false).setVisible(false));
         this.fx.push(fx);
       }

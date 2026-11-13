@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ASSETS } from '../data/assets.js';
+import { DEPTH } from '../config.js';
 
 // Construit une carte Tiled (export JSON, jeu de tuiles intégré).
 // Conventions reconnues (voir public/assets/README.md) :
@@ -21,17 +22,31 @@ export function buildMap(scene, mapKey) {
 
   const walls = [];
   map.layers.forEach((ld) => {
+    if (ld.visible === false) return; // calque caché (repli) : ni affiché ni bloquant
     const p = props(ld);
     const layer = map.createLayer(ld.name, tilesets, 0, 0);
     if (!layer) return;
-    // Sous l'obscurité (500) quoi qu'il arrive.
-    layer.setDepth(typeof p.depth === 'number' ? Math.min(p.depth, 400) : p.above ? 100 : -5);
+    // « depth » ou « above » : au-dessus des personnages (triés par y), sous l'obscurité.
+    layer.setDepth(typeof p.depth === 'number' || p.above ? DEPTH.above : DEPTH.ground + 1);
     if (p.collides) layer.setCollisionByExclusion([-1]);
     else layer.setCollisionByProperty({ collides: true });
     walls.push(layer);
   });
 
   const objects = map.objects.flatMap((ol) => ol.objects);
+
+  // Décors du DA posés en objets image (type « prop », propriété « key » = clé du manifest).
+  // Triés par y comme les personnages (propriété « depth »).
+  objects.filter((o) => typeOf(o) === 'prop').forEach((o) => {
+    const p = props(o);
+    if (!p.key || !scene.textures.exists(p.key)) return;
+    scene.add.image(o.x, o.y, p.key)
+      .setOrigin(p.originX ?? 0.5, p.originY ?? 1)
+      .setAngle(p.angle ?? 0)
+      .setScale(p.scale ?? 1)
+      .setFlipX(!!p.flipX)
+      .setDepth(p.depth ?? o.y);
+  });
   const startObj = objects.find((o) => typeOf(o) === 'player_start')
     || objects.find((o) => (o.name || '').toLowerCase() === 'joueur');
   const start = startObj ? { x: startObj.x, y: startObj.y } : { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { applyVisual, flash } from './visuals.js';
+import { DEPTH } from '../config.js';
 
 const FLOW = { x: 0, y: 0 };
 
@@ -7,7 +8,7 @@ const FLOW = { x: 0, y: 0 };
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'E01');
-    this.eyes = scene.add.image(x, y, 'eyes').setDepth(600).setVisible(false);
+    this.eyes = scene.add.image(x, y, 'eyes').setDepth(DEPTH.eyes).setVisible(false);
     this.zigPhase = 0;
   }
 
@@ -24,7 +25,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.speed = def.speed * Phaser.Math.FloatBetween(0.9, 1.1);
     this.zigPhase = Math.random() * Math.PI * 2;
     this.orbHitAt = 0;
-    this.setAlpha(1).setDepth(5);
+    this.setAlpha(1).setDepth(y);
     const s = def.radius / 14;
     this.eyes.setScale(Math.max(0.6, s));
   }
@@ -43,6 +44,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       vy += (dx / d) * this.speed * w;
     }
     this.setVelocity(vx, vy);
+    this.setDepth(this.y);
     this.setFlipX(vx < 0);
     // Les yeux lumineux ne s'affichent que dans le noir (hors de la lumière),
     // pour qu'on repère les créatures qui approchent.

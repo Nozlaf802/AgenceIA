@@ -8,7 +8,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     scene.add.existing(this);
     scene.physics.add.existing(this);
     applyVisual(this, 'player', BALANCE.player.radius);
-    this.setDepth(10);
+    this.setDepth(y);
     this.stats = stats;
     this.radius = BALANCE.player.radius;
     this.hp = this.maxHp;
@@ -38,6 +38,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   // dir : vecteur {x, y} de longueur 0..1 (clavier ou joystick).
   move(dir, dt) {
+    this.setDepth(this.y);
     this.iframes = Math.max(0, this.iframes - dt);
     const len = Math.hypot(dir.x, dir.y);
     if (len < 0.05) {

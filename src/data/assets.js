@@ -44,10 +44,11 @@ export const ASSETS = {
 
   // Cartes Tiled (export JSON, jeu de tuiles intégré). Voir public/assets/README.md.
   maps: {
-    // Carte du Level designer (source : level-design/falaise-du-phare), tileset du DA.
+    // Carte du Level designer (source : level-design/falaise-du-phare, copiée ici).
+    // Tileset étendu = tuiles du DA + bordures automatiques du Level designer.
     falaise: {
       url: 'assets/maps/falaise_du_phare.tmj',
-      tilesets: [{ name: 'falaise', key: 'tiles_falaise', url: 'assets/tiles/tileset_falaise.png' }],
+      tilesets: [{ name: 'falaise', key: 'tiles_falaise', url: 'assets/tiles/tileset_falaise_etendu.png' }],
     },
     demo: {
       url: 'assets/maps/demo.json',

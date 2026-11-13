@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { VIEW } from '../config.js';
+import { VIEW, DEPTH } from '../config.js';
 import { BALANCE } from '../data/balance.js';
 import { WEAPONS, PASSIVES, FALLBACKS, MAX_WEAPONS, MAX_PASSIVES } from '../data/upgrades.js';
 import { Player } from '../objects/Player.js';
@@ -41,7 +41,7 @@ export class GameScene extends Phaser.Scene {
     // (un motif de sol qui défile avec la caméra).
     this.level = buildMap(this, selectedMap());
     if (!this.level) {
-      this.ground = this.add.tileSprite(0, 0, 4, 4, 'ground').setScrollFactor(0).setDepth(-10);
+      this.ground = this.add.tileSprite(0, 0, 4, 4, 'ground').setScrollFactor(0).setDepth(DEPTH.ground);
     }
     const start = this.level?.start ?? { x: 0, y: 0 };
 
@@ -240,7 +240,7 @@ export class GameScene extends Phaser.Scene {
   dropPickup(kind, x, y, value) {
     let o = this.pickups.find((it) => !it.active);
     if (!o) {
-      o = this.add.sprite(x, y, kind).setDepth(4);
+      o = this.add.sprite(x, y, kind);
       this.pickups.push(o);
     }
     applyVisual(o, kind);
@@ -250,7 +250,7 @@ export class GameScene extends Phaser.Scene {
     o.attracted = false;
     if (kind === 'lueur') o.setScale(o.scaleX * Math.min(1 + Math.log2(value) * 0.25, 2.5));
     // Les lucioles brillent au-dessus de l'obscurité pour qu'on les repère de loin.
-    o.setDepth(kind === 'luciole' ? 650 : 4);
+    o.setDepth(kind === 'luciole' ? DEPTH.glow : DEPTH.pickup);
   }
 
   updatePickups(dt) {

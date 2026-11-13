@@ -39,3 +39,17 @@ export const FONTS = {
   title: '"Chakra Petch", system-ui, sans-serif',
   mono: '"IBM Plex Mono", ui-monospace, monospace',
 };
+
+// Ordre d'affichage. Les personnages et les décors sont triés par leur y
+// (0 à la hauteur de la carte) ; le reste est placé au-dessus ou en dessous.
+export const DEPTH = {
+  ground: -10,
+  pickup: -1,
+  above: 50000, // feuillage, toits (calques « dessus »)
+  fx: 60000, // tirs, flammes, chiffres
+  darkness: 100000,
+  eyes: 100100,
+  glow: 100150, // lucioles visibles dans le noir
+  text: 100200,
+  joystick: 200000,
+};

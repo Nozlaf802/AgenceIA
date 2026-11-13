@@ -1,5 +1,6 @@
 import { WEAPONS } from '../data/upgrades.js';
 import { applyVisual } from '../objects/visuals.js';
+import { DEPTH } from '../config.js';
 
 // Armes automatiques. Les collisions sont faites à la main (distance),
 // c'est simple et rapide pour quelques centaines de créatures.
@@ -50,7 +51,7 @@ export class Weapons {
   fireBolt(x, y, target, dmg, range) {
     let b = this.bolts.find((o) => !o.active);
     if (!b) {
-      b = this.scene.add.image(x, y, 'bolt').setDepth(8);
+      b = this.scene.add.image(x, y, 'bolt').setDepth(DEPTH.fx);
       this.bolts.push(b);
     }
     const a = Math.atan2(target.y - y, target.x - x);
@@ -81,7 +82,7 @@ export class Weapons {
   syncOrbs() {
     const n = this.stats('orbit').count;
     while (this.orbs.length < n) {
-      const o = this.scene.add.sprite(0, 0, 'orb').setDepth(9);
+      const o = this.scene.add.sprite(0, 0, 'orb').setDepth(DEPTH.fx);
       applyVisual(o, 'orb');
       o.baseScale = o.scaleX;
       this.orbs.push(o);
