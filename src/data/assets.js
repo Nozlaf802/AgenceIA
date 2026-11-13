@@ -17,6 +17,7 @@ export const ASSETS = {
     E03: { sheet: 'brumeux', scale: 0.36 }, // Bruine (essaim, petite)
     E04: { sheet: 'rodeur', scale: 0.8 }, // Chape (tank)
     orb: { sheet: 'projectile_feu', scale: 1 },
+    frost: { sheet: 'projectile_givre', scale: 0.9 },
     lueur: { sheet: 'eclat_lumiere', scale: 0.8 },
   },
 
@@ -33,6 +34,9 @@ export const ASSETS = {
     'lueur-loop': { sheet: 'eclat_lumiere', start: 0, end: 3, frameRate: 8 },
     'fx-dissipation': { sheet: 'dissipation', start: 0, end: 5, frameRate: 18, repeat: 0 },
     'fx-impact_feu': { sheet: 'impact_feu', start: 0, end: 5, frameRate: 24, repeat: 0 },
+    'frost-loop': { sheet: 'projectile_givre', start: 0, end: 3, frameRate: 14 },
+    'fx-impact_givre': { sheet: 'impact_givre', start: 0, end: 5, frameRate: 24, repeat: 0 },
+    'fx-impact_foudre': { sheet: 'impact_foudre', start: 0, end: 5, frameRate: 28, repeat: 0 },
   },
 
   // Icônes de l'interface (clés du manifest).

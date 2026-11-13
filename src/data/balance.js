@@ -64,9 +64,9 @@ export const BALANCE = {
     { spawnPerSec: 2.2, maxAlive: 80, mix: { E01: 0.6, E02: 0.4 },
       events: [{ at: 30, type: 'ring', enemy: 'E02', count: 30 }] },
     { spawnPerSec: 3.5, maxAlive: 130, mix: { E01: 0.4, E02: 0.2, E04: 0.2, E05: 0.2 },
-      events: [{ at: 30, type: 'text', key: 'ui.tuto.light' }, { at: 0, type: 'ring', enemy: 'E01', count: 36 }] },
+      events: [{ at: 30, type: 'text', key: 'ui.tuto.light' }, { at: 0, type: 'ring', enemy: 'E01', count: 28 }] }, // v1.2 : 36 -> 28 (QA #12)
     { spawnPerSec: 4.5, maxAlive: 170, mix: { E01: 0.3, E03: 0.25, E05: 0.2, E06: 0.25 },
-      events: [{ at: 0, type: 'ring', enemy: 'E01', count: 48 }, { at: 30, type: 'ring', enemy: 'E04', count: 10 }] },
+      events: [{ at: 0, type: 'ring', enemy: 'E01', count: 36 }, { at: 30, type: 'ring', enemy: 'E04', count: 10 }] }, // v1.2 : 48 -> 36 (QA #12)
     { spawnPerSec: 3.6, maxAlive: 140, mix: { E01: 0.5, E02: 0.5 },
       events: [{ at: 20, type: 'ring', enemy: 'E02', count: 40 }] },
     { spawnPerSec: 4.5, maxAlive: 180, mix: { E01: 0.25, E04: 0.2, E07: 0.2, E08: 0.35 },
