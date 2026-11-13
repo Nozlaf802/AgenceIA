@@ -56,7 +56,7 @@ export const BALANCE = {
     { spawnPerSec: 1.0, maxAlive: 40, mix: { E01: 1 },
       events: [{ at: 1, type: 'text', key: 'ui.tuto.move' }] },
     { spawnPerSec: 1.8, maxAlive: 60, mix: { E01: 0.7, E02: 0.3 },
-      events: [{ at: 50, type: 'ring', enemy: 'E01', count: 16 }] },
+      events: [{ at: 50, type: 'ring', enemy: 'E01', count: 16 }] }, // anneau à 1:50
     { spawnPerSec: 2.4, maxAlive: 90, mix: { E01: 0.5, E02: 0.3, E03: 0.2 },
       events: [{ at: 20, type: 'swarm', enemy: 'E03', count: 25, from: 'bottom' },
                { at: 20, type: 'swarm', enemy: 'E03', count: 25, from: 'top' },
@@ -69,13 +69,13 @@ export const BALANCE = {
       events: [{ at: 0, type: 'ring', enemy: 'E01', count: 48 }, { at: 30, type: 'ring', enemy: 'E04', count: 10 }] },
     { spawnPerSec: 3.6, maxAlive: 140, mix: { E01: 0.5, E02: 0.5 },
       events: [{ at: 20, type: 'ring', enemy: 'E02', count: 40 }] },
-    { spawnPerSec: 5.5, maxAlive: 200, mix: { E01: 0.25, E04: 0.2, E07: 0.2, E08: 0.35 },
-      events: [{ at: 0, type: 'ring', enemy: 'E01', count: 56 }, { at: 40, type: 'ring', enemy: 'E04', count: 14 }] },
-    { spawnPerSec: 7, maxAlive: 240, mix: { E01: 0.2, E02: 0.2, E03: 0.3, E04: 0.3 },
+    { spawnPerSec: 4.5, maxAlive: 180, mix: { E01: 0.25, E04: 0.2, E07: 0.2, E08: 0.35 },
+      events: [{ at: 0, type: 'ring', enemy: 'E01', count: 40 }, { at: 40, type: 'ring', enemy: 'E04', count: 10 }] },
+    { spawnPerSec: 5.5, maxAlive: 220, mix: { E01: 0.2, E02: 0.2, E03: 0.3, E04: 0.3 },
       events: [
         { at: 0, type: 'swarm', enemy: 'E03', count: 30, from: 'left' },
         { at: 0, type: 'swarm', enemy: 'E03', count: 30, from: 'right' },
-        { at: 30, type: 'ring', enemy: 'E01', count: 64 },
+        { at: 30, type: 'ring', enemy: 'E01', count: 48 },
       ] },
     // Minute 9 : le boss arrivera ici. En attendant, une dernière vague plus calme.
     { spawnPerSec: 4, maxAlive: 160, mix: { E01: 0.4, E02: 0.3, E04: 0.3 },

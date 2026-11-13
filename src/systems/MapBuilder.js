@@ -61,6 +61,28 @@ export function buildMap(scene, mapKey) {
   const fireflyZones = objects.filter((o) => typeOf(o) === 'firefly_zone')
     .map((o) => ({ rect: new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height), weight: props(o).poids ?? 1 }));
 
+  // Filet de sécurité (#16) : un décor bloquant sans aucune tuile de collision
+  // sous lui reçoit des collisions invisibles sur son emprise.
+  const solid = new Set(['barque', 'caisse', 'tonneau', 'brasero', 'rocher_grand', 'rocher_petit']);
+  const obstacleLayer = layers.find((l) => l.layer.name === 'obstacles') || walls[walls.length - 1];
+  const tw = map.tileWidth, th = map.tileHeight;
+  propImages.filter((img) => solid.has(img.propKey)).forEach((img) => {
+    const b = img.getBounds();
+    const pad = Math.min(b.width, b.height) * 0.15;
+    const x0 = Math.floor((b.x + pad) / tw), x1 = Math.floor((b.right - pad) / tw);
+    const y0 = Math.floor((b.y + pad) / th), y1 = Math.floor((b.bottom - pad) / th);
+    const collides = (x, y) => walls.some((l) => l.getTileAt(x, y)?.collides);
+    let any = false;
+    for (let y = y0; y <= y1 && !any; y++) for (let x = x0; x <= x1; x++) if (collides(x, y)) { any = true; break; }
+    if (any || !obstacleLayer) return;
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        const t = obstacleLayer.putTileAt(53, x, y);
+        if (t) { t.setCollision(true, true, true, true); t.setAlpha(0); }
+      }
+    }
+  });
+
   const level = new Level(map, walls, start, spawns, fireflyZones);
   level.layers = layers;
   level.props = propImages;
