@@ -1,13 +1,13 @@
 import Phaser from 'phaser';
 import { BALANCE } from '../data/balance.js';
-import { fitCircle, animate } from './visuals.js';
+import { applyVisual, animate, flash } from './visuals.js';
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y, stats) {
     super(scene, x, y, 'player');
     scene.add.existing(this);
     scene.physics.add.existing(this);
-    fitCircle(this, BALANCE.player.radius);
+    applyVisual(this, 'player', BALANCE.player.radius);
     this.setDepth(10);
     this.stats = stats;
     this.radius = BALANCE.player.radius;
@@ -32,8 +32,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (this.iframes > 0 || this.hp <= 0) return false;
     this.hp = Math.max(0, this.hp - n);
     this.iframes = BALANCE.player.iframes;
-    this.setAlpha(0.5);
-    this.scene.time.delayedCall(120, () => this.setAlpha(1));
+    flash(this, 0xff5a36, 110);
     return true;
   }
 
@@ -49,7 +48,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     animate(this, true);
     const k = Math.min(len, 1) / len;
     this.setVelocity(dir.x * k * this.speed, dir.y * k * this.speed);
-    if (this.scene.anims.exists('player-walk')) this.setFlipX(dir.x < 0);
+    if (this.hasArt) { if (Math.abs(dir.x) > 0.1) this.setFlipX(dir.x < 0); }
     else this.setRotation(Math.atan2(dir.y, dir.x));
   }
 }

@@ -10,22 +10,32 @@ export const VIEW = {
   tileSize: 64,
 };
 
+// Palette « Phare Vectoriel » du Directeur artistique (public/assets/manifest.json).
 export const COLORS = {
-  background: 0x14161f,
-  groundA: 0x1d2130,
-  groundB: 0x222738,
+  background: 0x070912, // nuit
+  surface: 0x10142a,
+  groundA: 0x10142a,
+  groundB: 0x141a33,
   player: 0x5ad1ff,
   playerOutline: 0xffffff,
-  joystickBase: 0xffffff,
-  joystickKnob: 0x5ad1ff,
-  darkness: 0x05060c,
-  darknessAlpha: 0.93,
-  bolt: 0xffe08a,
-  orb: 0xff7a3d,
-  lueur: 0xffd36b,
-  oil: 0x7cf0c5,
-  eyes: 0xfff4c2,
-  hp: 0xe8505b,
-  light: 0xffc96b,
-  xp: 0x7fd6ff,
+  joystickBase: 0xe8ecff,
+  joystickKnob: 0xffd97a,
+  darkness: 0x070912,
+  darknessAlpha: 0.94,
+  bolt: 0xffd97a,
+  orb: 0xff5a36,
+  lueur: 0xffd97a,
+  oil: 0x5ee8ff,
+  eyes: 0xfff1c2,
+  hp: 0xff5a36,
+  light: 0xffd97a,
+  xp: 0x5ee8ff,
+  frost: 0x5ee8ff,
+  lightning: 0xb98cff,
+  text: 0xe8ecff,
+};
+
+export const FONTS = {
+  title: '"Chakra Petch", system-ui, sans-serif',
+  mono: '"IBM Plex Mono", ui-monospace, monospace',
 };

@@ -1,8 +1,10 @@
 import Phaser from 'phaser';
-import { COLORS } from '../config.js';
+import { COLORS, FONTS } from '../config.js';
+import { ASSETS } from '../data/assets.js';
 import { t } from '../data/texts.js';
 
-const FONT = 'system-ui, -apple-system, Segoe UI, sans-serif';
+const FONT = FONTS.title;
+const MONO = FONTS.mono;
 
 export class TitleScene extends Phaser.Scene {
   constructor() {
@@ -25,22 +27,28 @@ export class TitleScene extends Phaser.Scene {
     for (let i = 10; i > 0; i--) {
       halo.fillStyle(COLORS.light, 0.025).fillCircle(w / 2, h / 2 - 20, 40 + i * 26);
     }
+    if (this.textures.exists('phare')) {
+      this.add.image(w / 2, h / 2 - 40, 'phare').setAlpha(0.22).setScale(Math.min(1, h / 520));
+    }
+    if (this.anims.exists('player-idle')) {
+      this.add.sprite(w / 2, h / 2 + 130, 'gardien_idle').play('player-idle').setScale(0.9);
+    }
     this.add.text(w / 2, h / 2 - 90, t('ui.title.name'), {
-      fontFamily: FONT, fontSize: w < 500 ? '30px' : '44px', color: '#ffe3a8', fontStyle: 'bold', align: 'center',
+      fontFamily: FONT, fontSize: w < 500 ? '30px' : '44px', color: '#ffd97a', fontStyle: '700', align: 'center',
       wordWrap: { width: w - 32 },
     }).setOrigin(0.5);
     this.add.text(w / 2, h / 2 - 30, t('ui.title.tagline'), {
       fontFamily: FONT, fontSize: '16px', color: '#aab2d0', align: 'center', wordWrap: { width: w - 32 },
     }).setOrigin(0.5);
 
-    const bg = this.add.rectangle(w / 2, h / 2 + 50, 280, 60, 0x1e2336).setStrokeStyle(2, COLORS.light, 0.9)
+    const bg = this.add.rectangle(w / 2, h / 2 + 50, 280, 60, 0x10142a).setStrokeStyle(2, COLORS.light, 0.9)
       .setInteractive({ useHandCursor: true });
     this.add.text(w / 2, h / 2 + 50, t('ui.title.play'), { fontFamily: FONT, fontSize: '20px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5);
-    bg.on('pointerover', () => bg.setFillStyle(0x2b3350));
-    bg.on('pointerout', () => bg.setFillStyle(0x1e2336));
+    bg.on('pointerover', () => bg.setFillStyle(0x1d2547));
+    bg.on('pointerout', () => bg.setFillStyle(0x10142a));
     bg.on('pointerup', () => this.start());
 
-    this.add.text(w / 2, h - 30, 'ZQSD / WASD / flèches, ou glisse le doigt · P = pause · prototype', {
+    this.add.text(w / 2, h - 22, 'ZQSD / WASD / flèches, ou glisse le doigt · P = pause · prototype', {
       fontFamily: FONT, fontSize: '12px', color: '#6f7799', align: 'center', wordWrap: { width: w - 32 },
     }).setOrigin(0.5);
   }

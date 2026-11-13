@@ -5,6 +5,7 @@ export class Juice {
   constructor(scene) {
     this.scene = scene;
     this.texts = [];
+    this.fx = [];
     if (!scene.textures.exists('spark')) {
       const g = scene.make.graphics({ x: 0, y: 0 }, false);
       g.fillStyle(0xffffff, 1).fillCircle(4, 4, 4);
@@ -25,7 +26,7 @@ export class Juice {
     let tx = this.texts.find((o) => !o.active);
     if (!tx) {
       tx = this.scene.add.text(0, 0, '', {
-        fontFamily: 'system-ui, sans-serif', fontSize: '14px', fontStyle: 'bold',
+        fontFamily: '"IBM Plex Mono", ui-monospace, monospace', fontSize: '14px', fontStyle: 'bold',
         color: '#ffffff', stroke: '#000000', strokeThickness: 3,
       }).setOrigin(0.5).setDepth(700);
       this.texts.push(tx);
@@ -38,8 +39,19 @@ export class Juice {
     });
   }
 
-  burst(x, y, color) {
-    this.particles.setParticleTint?.(color);
+  burst(x, y, color, radius = 14) {
+    if (this.scene.anims.exists('fx-dissipation')) {
+      let fx = this.fx.find((o) => !o.active);
+      if (!fx) {
+        if (this.fx.length > 40) return;
+        fx = this.scene.add.sprite(x, y, 'dissipation').setDepth(6);
+        fx.on('animationcomplete', () => fx.setActive(false).setVisible(false));
+        this.fx.push(fx);
+      }
+      fx.setActive(true).setVisible(true).setPosition(x, y).setScale(Math.max(0.5, radius / 20));
+      fx.play('fx-dissipation');
+      return;
+    }
     this.particles.explode(8, x, y);
   }
 }
