@@ -136,7 +136,7 @@ Le DA peut redessiner librement l'image du tileset, à une condition : **garder 
 | 25 | brasero | oui | obstacles |
 | 26 | feuillage_pin | | dessus |
 | 27 | phare_haut | | dessus |
-| 28 | (réserve) | | dessus |
+| 28 | phare_haut_allume (bascule à la victoire) | | dessus |
 | 29-36 | herbe_sable_n, _e, _s, _o, _ne, _se, _so, _no | | sol |
 | 37-44 | herbe_chemin_n … _no (même ordre) | | sol |
 | 45-52 | sable_ecume_n … _no (même ordre) | | sol |
@@ -145,4 +145,4 @@ Le DA peut redessiner librement l'image du tileset, à une condition : **garder 
 
 Le tileset passe ainsi à 56 cases (8 colonnes × 7 lignes). Dans chaque série, la tuile porte le sol de base, et la frange de la matière voisine se trouve du côté indiqué : `_n` = frange en haut, `_ne` = coin haut-droite, etc.
 
-Remarque pour le DA : dans `props/phare.png`, la lanterne du phare est allumée. Or, dans l'histoire, le phare est éteint jusqu'à la victoire. Il faudrait une variante `phare_eteint` (le jeu bascule sur `phare` à la victoire). La clé est déjà prévue côté carte : il suffit de changer `key`.
+Le phare de la couche `decors` utilise `props/phare.png` (éteint). À la victoire, le jeu remplace sa texture par `phare_allume` et allume la lumière `phare` de la couche `lumieres`.

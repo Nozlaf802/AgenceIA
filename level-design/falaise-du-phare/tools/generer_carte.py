@@ -67,7 +67,7 @@ TUILES = [
     (25, "brasero",        True,  "obstacles", (230, 140, 50)),
     (26, "feuillage_pin",  False, "dessus",    (34, 72, 54)),
     (27, "phare_haut",     False, "dessus",    (236, 232, 222)),
-    (28, "reserve_dessus", False, "dessus",    (255, 0, 255)),
+    (28, "phare_haut_allume", False, "dessus",  (255, 230, 150)),
 ]
 # 29-52 : bordures automatiques (proposées par le DA). Ordre dans chaque série :
 # n, e, s, o (côtés), ne, se, so, no (coins). La tuile porte le sol de base et une
