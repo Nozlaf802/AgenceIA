@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="48" viewBox="0 0 32 48"><defs>
+<filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="2.2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="glowBig" x="-100%" y="-100%" width="300%" height="300%"><feGaussianBlur stdDeviation="6" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+<filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="3"/></filter>
+<radialGradient id="halo"><stop offset="0" stop-color="#FFD97A" stop-opacity=".55"/><stop offset="1" stop-color="#FFD97A" stop-opacity="0"/></radialGradient>
+<radialGradient id="haloFeu"><stop offset="0" stop-color="#FF5A36" stop-opacity=".6"/><stop offset="1" stop-color="#FF5A36" stop-opacity="0"/></radialGradient>
+<radialGradient id="haloGivre"><stop offset="0" stop-color="#5EE8FF" stop-opacity=".6"/><stop offset="1" stop-color="#5EE8FF" stop-opacity="0"/></radialGradient>
+<radialGradient id="haloFoudre"><stop offset="0" stop-color="#B98CFF" stop-opacity=".6"/><stop offset="1" stop-color="#B98CFF" stop-opacity="0"/></radialGradient>
+<radialGradient id="brumeFill" cx=".5" cy=".4"><stop offset="0" stop-color="#6A70A8" stop-opacity=".95"/><stop offset="1" stop-color="#3A3F6B" stop-opacity=".9"/></radialGradient>
+</defs><circle cx="16" cy="22" r="16" fill="url(#halo)"/><ellipse cx="16" cy="44" rx="9" ry="3" fill="#000" opacity="0.45" filter="url(#soft)"/><path d="M10 14 L22 14 L24 40 L8 40 Z" fill="#10142A" stroke="#FFD97A" stroke-width="1.4"/><rect x="12.5" y="18" width="7" height="16" rx="2" fill="#FFD97A" filter="url(#glowBig)"/><path d="M12 14 Q16 6 20 14" stroke="#E8ECFF" stroke-width="1.4" fill="none"/></svg>
