@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { fitCircle, animate } from './visuals.js';
 
+const FLOW = { x: 0, y: 0 };
+
 // Créature de brume, réutilisée via un pool (group.get).
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
@@ -28,12 +30,14 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.eyes.setScale(Math.max(0.6, s)).setVisible(true);
   }
 
-  tick(dt, target, time) {
+  tick(dt, target, time, level) {
     const dx = target.x - this.x;
     const dy = target.y - this.y;
     const d = Math.hypot(dx, dy) || 1;
-    let vx = (dx / d) * this.speed;
-    let vy = (dy / d) * this.speed;
+    // Sur une carte, on suit le champ de flux pour contourner les obstacles.
+    const f = level && d > 48 ? level.flowDir(this.x, this.y, FLOW) : null;
+    let vx = (f ? f.x : dx / d) * this.speed;
+    let vy = (f ? f.y : dy / d) * this.speed;
     if (this.def.zigzag) {
       const w = Math.sin(time * 0.006 + this.zigPhase) * 0.9;
       vx += (-dy / d) * this.speed * w;

@@ -40,7 +40,7 @@ export class Spawner {
     while (this.acc >= 1) {
       this.acc -= 1;
       if (this.scene.enemies.countActive(true) < maxAlive) {
-        const p = this.edgePoint();
+        const p = this.spawnPoint();
         this.spawn(this.pick(row.mix), p.x, p.y);
       }
     }
@@ -61,6 +61,15 @@ export class Spawner {
     if (!e) return null;
     e.spawn(realId, ENEMIES[realId], x, y, this.hpMult, this.dmgMult);
     return e;
+  }
+
+  // Sur une carte : un point d'apparition du Level designer, sinon le bord de l'écran.
+  spawnPoint() {
+    const lv = this.scene.level;
+    const pl = this.scene.player;
+    const sp = lv?.pickSpawn(this.scene.cameras.main.worldView, pl.x, pl.y);
+    if (sp) return { x: sp.x + Phaser.Math.Between(-12, 12), y: sp.y + Phaser.Math.Between(-12, 12) };
+    return this.edgePoint();
   }
 
   // Point juste hors de l'écran, dans une direction au hasard.
@@ -89,14 +98,15 @@ export class Spawner {
         const base = sides[ev.from] ?? Math.random() * Math.PI * 2;
         const c = this.edgePoint(base, 80);
         for (let i = 0; i < ev.count; i++) {
-          this.spawn(ev.enemy, c.x + Phaser.Math.Between(-90, 90), c.y + Phaser.Math.Between(-90, 90));
+          const x = c.x + Phaser.Math.Between(-90, 90), y = c.y + Phaser.Math.Between(-90, 90);
+          if (!this.scene.level?.isBlockedAt(x, y)) this.spawn(ev.enemy, x, y);
         }
         break;
       }
       case 'ring':
         for (let i = 0; i < ev.count; i++) {
           const p = this.edgePoint((i / ev.count) * Math.PI * 2, 20);
-          this.spawn(ev.enemy, p.x, p.y);
+          if (!this.scene.level?.isBlockedAt(p.x, p.y)) this.spawn(ev.enemy, p.x, p.y);
         }
         break;
       default:

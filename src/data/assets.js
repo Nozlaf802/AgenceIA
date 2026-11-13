@@ -32,10 +32,14 @@ export const ASSETS = {
       url: 'assets/maps/demo.json',
       tilesets: [{ name: 'demo_tiles', key: 'demo_tiles', url: 'assets/tiles/demo_tiles.png' }],
     },
-    // falaise: { url: 'assets/maps/falaise.json', tilesets: [{ name: 'falaise', key: 'falaise_tiles', url: 'assets/tiles/falaise.png' }] },
+    // Carte du Level designer (source : level-design/falaise-du-phare, regénérée par son script).
+    falaise: {
+      url: 'assets/maps/falaise_du_phare.tmj',
+      tilesets: [{ name: 'falaise', key: 'tiles_falaise', url: 'assets/tiles/tileset_falaise_provisoire.png' }],
+    },
   },
 
   // Carte jouée par défaut. null = arène infinie provisoire.
-  // On peut forcer une carte avec l'adresse ?map=demo
-  defaultMap: null,
+  // On peut forcer une carte avec l'adresse ?map=demo, ou ?map=infini pour l'arène infinie.
+  defaultMap: 'falaise',
 };

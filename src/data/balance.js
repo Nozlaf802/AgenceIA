@@ -29,11 +29,20 @@ export const BALANCE = {
     auraDmgMin: 1, // dégâts par tick à 0 Lumière
     auraDmgMax: 3, // dégâts par tick à 100 Lumière
     flicker: 4,
+    firefly: 10, // Lumière rendue par une luciole au sol
+    fireflyEverySec: 10, // une luciole apparaît toutes les X s (si la carte a des zones)
+    fireflyMax: 6,
   },
 
-  // XP nécessaire pour passer du niveau L au niveau L+1.
-  xpToNext: (L) => Math.round(5 + 4 * (L - 1) + 0.6 * (L - 1) ** 2),
+  // XP pour passer au niveau n+1 : ceil(base + linear×(n−1) + quad×(n−1)²)
+  // Repères : niv. 2 = 2, niv. 11 = 16, niv. 21 = 36, niv. 28 = 54.
+  xpCurve: { base: 2, linear: 1.2, quad: 0.03 },
+  xpToNext(n) {
+    const c = this.xpCurve;
+    return Math.ceil(c.base + c.linear * (n - 1) + c.quad * (n - 1) ** 2);
+  },
   xpPerLueur: 1,
+  maxLueursOnGround: 150, // au-delà, les nouvelles fusionnent dans une grosse Lueur
 
   difficulty: {
     hpPerMinute: 0.22,
