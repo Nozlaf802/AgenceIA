@@ -29,6 +29,15 @@ export class UIScene extends Phaser.Scene {
       backgroundColor: '#00000088', padding: { x: 12, y: 8 },
     }).setOrigin(0.5).setAlpha(0);
 
+    // Debug (?debug à la fin de l'adresse, ou touche F2) : FPS, niveau,
+    // étincelles ramassées par minute, pour régler la courbe d'XP.
+    this.debug = new URLSearchParams(location.search).has('debug');
+    this.debugText = this.add.text(16, 64, '', {
+      fontFamily: 'ui-monospace, monospace', fontSize: '11px', color: '#9fb0d8',
+      backgroundColor: '#00000099', padding: { x: 6, y: 4 },
+    }).setVisible(this.debug);
+    this.input.keyboard.on('keydown-F2', () => { this.debug = !this.debug; this.debugText.setVisible(this.debug); });
+
     this.pauseBtn = this.add.text(0, 0, '❚❚', { ...style, fontSize: '22px' })
       .setOrigin(1, 0).setInteractive({ useHandCursor: true })
       .on('pointerdown', () => this.game_.togglePause());
@@ -87,6 +96,16 @@ export class UIScene extends Phaser.Scene {
     this.timerText.setText(fmtTime(g.elapsed));
     this.killText.setText(`${pr.kills} créatures dissipées`);
     this.levelText.setText(`Niv. ${pr.level}`);
+
+    if (this.debug) {
+      const lpm = g.lueursPerMinute.map((v, i) => `${i}:${v ?? 0}`).join(' ');
+      const ground = g.pickups.filter((o) => o.active && o.kind === 'lueur').length;
+      this.debugText.setText([
+        `${Math.round(this.game.loop.actualFps)} fps · créatures ${g.enemies.countActive(true)} · Lueurs au sol ${ground}`,
+        `XP ${pr.xp}/${pr.xpNext} · niv. ${pr.level}`,
+        `Lueurs/min ${lpm || '-'}`,
+      ]);
+    }
   }
 
   toast(key) {

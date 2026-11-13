@@ -37,6 +37,8 @@ src/
 public/assets/           visuels du DA et cartes du Level designer (voir son README)
 ```
 
-Carte de démonstration Tiled : ajouter `?map=demo` à l'adresse.
+Cartes : la partie se joue sur « Falaise du Phare » (Level designer, `level-design/falaise-du-phare`,
+copiée dans `public/assets/`). Ajouter `?map=demo` (petite carte de test) ou `?map=infini` (arène infinie) à l'adresse.
+Debug : `?debug` ou touche F2 (FPS, XP, étincelles ramassées par minute).
 
 Moteur : [Phaser 4](https://phaser.io) + [Vite](https://vite.dev).

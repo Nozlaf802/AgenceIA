@@ -4,7 +4,11 @@ import { BALANCE } from '../data/balance.js';
 import { ENEMIES } from '../data/enemies.js';
 import { ASSETS } from '../data/assets.js';
 
-export const selectedMap = () => new URLSearchParams(location.search).get('map') ?? ASSETS.defaultMap;
+export const selectedMap = () => {
+  const q = new URLSearchParams(location.search).get('map');
+  if (q === 'infini') return null;
+  return q ?? ASSETS.defaultMap;
+};
 
 // Génère des textures provisoires (formes simples) en attendant
 // les vrais visuels de la charte graphique.
@@ -77,6 +81,7 @@ export class BootScene extends Phaser.Scene {
       g.generateTexture('eyes', 18, 8);
     }
 
+    circleTex('luciole', 5, 0xd8ff8a, { w: 3, c: 0xf4ffd0, a: 0.6 });
     circleTex('bolt', 5, COLORS.bolt, { w: 2, c: 0xffffff });
     circleTex('orb', 9, COLORS.orb, { w: 3, c: 0xffd08a });
 

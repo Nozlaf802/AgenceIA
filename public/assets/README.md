@@ -24,9 +24,12 @@ Tant qu'un visuel manque, le jeu affiche une forme provisoire.
 
 - Carte orthogonale, tuiles de 32×32 px conseillées, export **JSON** avec le jeu de
   tuiles **intégré** (pas de .tsx séparé).
-- Calque avec la propriété personnalisée `collides` (booléen, vrai) : murs et rochers.
-- Calque avec la propriété `above` (vrai) : dessiné au-dessus des personnages (cimes, toits).
-- Calque d'objets contenant un point nommé `joueur` : départ de Lumen.
+- Collisions : propriété de tuile `collides` dans le jeu de tuiles (recommandé), ou propriété `collides` sur tout un calque.
+- Calque avec la propriété `depth` (nombre) ou `above` (vrai) : dessiné au-dessus des personnages.
+- Objet de type `player_start` (ou point nommé `joueur`) : départ de Lumen.
+- Objets de type `spawn` : points d'apparition des créatures (le jeu prend ceux hors de l'écran).
+- Rectangles de type `firefly_zone` (propriété `poids`) : zones où apparaissent les lucioles.
+- Les créatures contournent les obstacles grâce à un champ de flux calculé sur la grille de tuiles.
 - Le nom du jeu de tuiles dans Tiled doit être celui indiqué dans `assets.js`.
 
 Exemple fourni : `maps/demo.json` (jouable avec l'adresse `?map=demo`).
