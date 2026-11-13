@@ -23,6 +23,16 @@ NODE_PATH=$(npm root -g) node tools/art/generate.mjs
 Le gardien regarde vers la droite : utiliser `setFlipX(true)` vers la gauche plutôt qu'une rotation.
 La lumière de la lanterne n'est qu'un halo léger dans le sprite : l'obscurité reste gérée par le jeu.
 
+## Tileset de la carte « Falaise du Phare »
+
+`tiles/tileset_falaise.png` respecte le contrat du Level designer : **28 tuiles de 32 px, 8 colonnes, mêmes ID** (1 = eau_profonde … 27 = phare_haut). Il remplace directement `tileset_falaise_provisoire.png`, sans retoucher la carte :
+
+```js
+this.load.image('tiles_falaise', 'assets/tiles/tileset_falaise.png');
+```
+
+Les tuiles sont raccordables, donc les grands obstacles faits de tuiles répétées (phare, gros rochers, barques, murs) restent propres. Pour un meilleur rendu, poser plus tard les décors de `props/` (phare, barque, rochers…) en images par-dessus, en gardant les tuiles d'obstacles comme collisions. Une version `@2x` existe pour les écrans haute densité. Aperçu de la carte entière : `preview/falaise_du_phare_carte_tileset.png`.
+
 ## Chargement Phaser
 
 ```js

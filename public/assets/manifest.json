@@ -257,5 +257,41 @@
       "file": "ui/crane.png",
       "size": 48
     }
-  ]
+  ],
+  "tilesetFalaise": {
+    "file": "tiles/tileset_falaise.png",
+    "tileSize": 32,
+    "columns": 8,
+    "firstgid": 1,
+    "names": [
+      "eau_profonde",
+      "eau_ecume",
+      "sable",
+      "herbe",
+      "herbe_sombre",
+      "chemin_terre",
+      "dalles",
+      "falaise",
+      "planches",
+      "fleurs",
+      "cailloux",
+      "filet_algues",
+      "herbe_haute",
+      "flaque",
+      "os_epave",
+      "reserve_deco",
+      "rocher_petit",
+      "rocher_gros",
+      "mur_ruine",
+      "menhir",
+      "barque",
+      "tronc_pin",
+      "phare_base",
+      "caisse",
+      "brasero",
+      "feuillage_pin",
+      "phare_haut",
+      "reserve_dessus"
+    ]
+  }
 }

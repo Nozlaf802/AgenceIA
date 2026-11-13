@@ -234,6 +234,47 @@ const ICONS = [
   ['crane', () => `<path d="M24 6 Q40 6 40 22 Q40 30 34 32 L34 40 L14 40 L14 32 Q8 30 8 22 Q8 6 24 6Z" fill="${C.texte}" opacity=".9"/><circle cx="17" cy="22" r="4.5" fill="${C.nuit}"/><circle cx="31" cy="22" r="4.5" fill="${C.nuit}"/><path d="M20 40 L20 34 M24 40 L24 34 M28 40 L28 34" stroke="${C.nuit}" stroke-width="2"/>`],
 ];
 
+
+// ---------- Tileset de la carte « Falaise du Phare » (contrat Level designer : 28 tuiles de 32 px, 8 colonnes) ----------
+// Les tuiles sont raccordables : le fond couvre toute la tuile, les détails restent à 2 px des bords.
+function t32(fill, seed, dots, dotColor, extra = '') {
+  const r = rng(seed); let s = `<rect width="32" height="32" fill="${fill}"/>`;
+  for (let i = 0; i < dots; i++) s += `<circle cx="${f(2 + r() * 28)}" cy="${f(2 + r() * 28)}" r="${f(0.4 + r() * 0.9)}" fill="${dotColor}" opacity="${f(0.35 + r() * 0.45)}"/>`;
+  return s + extra;
+}
+const blades = (seed, n, color, h = 7) => { const r = rng(seed); let s = ''; for (let i = 0; i < n; i++) { const x = 3 + r() * 26, y = 6 + r() * 23; s += `<path d="M${f(x)} ${f(y)} q${f((r() - .5) * 3)} ${-h / 2} ${f((r() - .5) * 4)} ${-h}" stroke="${color}" stroke-width="1.1" fill="none" stroke-linecap="round"/>`; } return s; };
+const HERBE = '#1C2E2A', HERBE_C = '#2F5A46', HERBE_S = '#142320', TERRE = '#2A2230', TERRE_C = '#43384A';
+const FALAISE_TILES = [
+  ['eau_profonde', () => t32(C.eau, 101, 0, '', `<path d="M4 10 q4 -2 8 0 t8 0 M14 24 q4 -2 8 0 t8 0" stroke="${C.eauClair}" stroke-width="1" fill="none" stroke-linecap="round" opacity=".8"/>`)],
+  ['eau_ecume', () => t32('#10243D', 102, 0, '', `<path d="M2 9 q5 -3 10 0 t10 0 t10 0 M2 21 q5 -3 10 0 t10 0 t10 0" stroke="${C.texte}" stroke-opacity=".55" stroke-width="1.3" fill="none" stroke-linecap="round"/><circle cx="8" cy="15" r="1" fill="${C.texte}" opacity=".5"/><circle cx="25" cy="28" r=".9" fill="${C.texte}" opacity=".5"/>`)],
+  ['sable', () => t32(C.sable, 103, 26, C.sableClair)],
+  ['herbe', () => t32(HERBE, 104, 6, HERBE_C, blades(104, 6, HERBE_C, 5))],
+  ['herbe_sombre', () => t32(HERBE_S, 105, 5, HERBE, blades(105, 5, HERBE, 5))],
+  ['chemin_terre', () => t32(TERRE, 106, 18, TERRE_C, `<ellipse cx="11" cy="20" rx="2" ry="1.3" fill="${TERRE_C}"/><ellipse cx="23" cy="9" rx="1.4" ry="1" fill="${TERRE_C}"/>`)],
+  ['dalles', () => { const r = rng(107); let s = `<rect width="32" height="32" fill="${C.nuit}"/>`; for (const [x, y, w, h] of [[1, 1, 14, 14], [17, 1, 14, 14], [1, 17, 14, 14], [17, 17, 14, 14]]) s += `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${r() > .5 ? C.roche : '#232A45'}" stroke="${C.rocheClair}" stroke-width=".8"/>`; return s + `<path d="M5 6 l4 3" stroke="${C.nuit}" stroke-width=".8"/>`; }],
+  ['falaise', () => `<rect width="32" height="32" fill="#0C0F1C"/><path d="M0 7 H32 M0 16 H32 M0 25 H32" stroke="${C.roche}" stroke-width="2"/><path d="M6 0 V7 M22 7 V16 M12 16 V25 M27 25 V32" stroke="${C.roche}" stroke-width="1.4"/><path d="M0 7.8 H32 M0 16.8 H32 M0 25.8 H32" stroke="${C.givre}" stroke-opacity=".12" stroke-width=".8"/>`],
+  ['planches', () => { let s = `<rect width="32" height="32" fill="${C.bois}"/>`; for (let i = 0; i < 4; i++) s += `<rect x="0" y="${i * 8}" width="32" height="7.4" fill="${i % 2 ? C.bois : '#33251E'}"/><circle cx="${i % 2 ? 4 : 28}" cy="${i * 8 + 3.7}" r=".8" fill="${C.boisClair}"/>`; return s; }],
+  ['fleurs', () => `<g>${[[8, 10, C.lanterne], [22, 8, C.foudre], [14, 22, C.lanterne], [26, 24, C.texte]].map(([x, y, c]) => `<line x1="${x}" y1="${y + 1}" x2="${x}" y2="${y + 5}" stroke="${HERBE_C}" stroke-width="1"/><circle cx="${x}" cy="${y}" r="1.8" fill="${c}"/><circle cx="${x}" cy="${y}" r=".7" fill="${C.nuit}"/>`).join('')}</g>`],
+  ['cailloux', () => `<g fill="${C.rocheClair}" stroke="${C.roche}" stroke-width=".6"><ellipse cx="9" cy="12" rx="3" ry="2.2"/><ellipse cx="21" cy="20" rx="2.2" ry="1.6"/><ellipse cx="14" cy="25" rx="1.6" ry="1.2"/><ellipse cx="25" cy="9" rx="1.4" ry="1"/></g>`],
+  ['filet_algues', () => `<path d="M4 6 L28 10 L26 26 L6 24 Z" fill="none" stroke="${C.texte}" stroke-opacity=".35" stroke-width=".8"/><path d="M4 6 L26 26 M28 10 L6 24 M16 8 L16 25 M5 15 L27 18" stroke="${C.texte}" stroke-opacity=".3" stroke-width=".7"/><path d="M8 28 q2 -6 0 -10 M24 30 q-2 -5 1 -9" stroke="${HERBE_C}" stroke-width="1.6" fill="none" stroke-linecap="round"/>`],
+  ['herbe_haute', () => blades(113, 14, HERBE_C, 11)],
+  ['flaque', () => `<ellipse cx="16" cy="17" rx="11" ry="7" fill="${C.eau}"/><ellipse cx="16" cy="17" rx="11" ry="7" fill="none" stroke="${C.eauClair}" stroke-width="1"/><path d="M10 15 q3 -1.5 6 0" stroke="${C.givre}" stroke-opacity=".5" stroke-width=".8" fill="none"/>`],
+  ['os_epave', () => `<g stroke="${C.texte}" stroke-opacity=".65" stroke-width="1.8" stroke-linecap="round"><line x1="5" y1="22" x2="17" y2="16"/></g><circle cx="22" cy="12" r="3.6" fill="${C.texte}" opacity=".6"/><circle cx="21" cy="11.5" r=".9" fill="${C.nuit}"/><circle cx="23.4" cy="11.5" r=".9" fill="${C.nuit}"/><path d="M6 28 L14 26 L13 29Z" fill="${C.boisClair}"/>`],
+  ['reserve_deco', () => ''],
+  ['rocher_petit', () => `<path d="M3 27 L6 12 L15 6 L25 9 L29 26 Z" fill="${C.roche}" stroke="${C.rocheClair}" stroke-width="1.2"/><path d="M6 12 L15 6 L17 15Z" fill="${C.rocheClair}" opacity=".55"/><path d="M6 12 L15 6 L25 9" stroke="${C.givre}" stroke-opacity=".3" stroke-width=".8" fill="none"/>`],
+  ['rocher_gros', () => `<rect width="32" height="32" fill="${C.roche}"/><path d="M0 11 L9 8 L16 13 L25 9 L32 12 M7 32 L10 21 L19 18 L24 25 L22 32 M0 24 L10 21 M19 18 L32 20" stroke="${C.rocheClair}" stroke-width="1.1" fill="none"/><path d="M9 8 L16 13 L19 18 L10 21Z" fill="${C.rocheClair}" opacity=".35"/>`],
+  ['mur_ruine', () => `<rect width="32" height="32" fill="#141829"/>${[[0, 1, 15], [16, 1, 16], [0, 11, 8], [9, 11, 15], [25, 11, 7], [0, 21, 15], [16, 21, 16]].map(([x, y, w]) => `<rect x="${x + .5}" y="${y}" width="${w - 1}" height="9" rx="1" fill="${C.roche}" stroke="${C.rocheClair}" stroke-width=".8"/>`).join('')}`],
+  ['menhir', () => `<path d="M10 30 L8 12 Q10 2 16 2 Q23 2 24 12 L22 30 Z" fill="${C.roche}" stroke="${C.rocheClair}" stroke-width="1.2"/><path d="M14 9 L18 11 L15 15 L19 19" stroke="${C.givre}" stroke-width="1.1" fill="none" filter="url(#glow)" opacity=".8"/>`],
+  ['barque', () => `<rect width="32" height="32" fill="${C.bois}"/><path d="M0 4 H32 M0 28 H32" stroke="${C.boisClair}" stroke-width="2"/><path d="M0 16 H32" stroke="#33251E" stroke-width="5"/><path d="M8 4 V28 M24 4 V28" stroke="${C.nuit}" stroke-width="1.6"/>`],
+  ['tronc_pin', () => `<ellipse cx="16" cy="26" rx="9" ry="3" fill="#000" opacity=".35"/><rect x="12" y="4" width="8" height="23" rx="2" fill="${C.bois}" stroke="${C.boisClair}" stroke-width="1"/><path d="M14 8 V24 M18 10 V22" stroke="#2A1E19" stroke-width=".9"/>`],
+  ['phare_base', () => `<rect width="32" height="32" fill="${C.surface}"/><path d="M0 8 H32 M0 24 H32" stroke="${C.feu}" stroke-opacity=".75" stroke-width="5"/><path d="M0 16 H32" stroke="${C.texte}" stroke-opacity=".25" stroke-width=".8"/><path d="M8 0 V6 M24 10 V14 M16 18 V22" stroke="${C.texte}" stroke-opacity=".2" stroke-width=".8"/>`],
+  ['caisse', () => `<rect x="4" y="5" width="24" height="23" rx="1.5" fill="${C.bois}" stroke="${C.boisClair}" stroke-width="1.4"/><path d="M4 5 L28 28 M28 5 L4 28" stroke="${C.boisClair}" stroke-width="1.4"/><rect x="4" y="5" width="24" height="3" fill="${C.boisClair}" opacity=".7"/>`],
+  ['brasero', () => `<circle cx="16" cy="13" r="15" fill="url(#halo)"/><path d="M12 20 L10 30 M20 20 L22 30" stroke="${C.rocheClair}" stroke-width="1.8"/><path d="M6 17 L26 17 L23 22 L9 22 Z" fill="${C.surface}" stroke="${C.lanterne}" stroke-width="1"/><path d="M9 17 Q10 9 15 4 Q15 11 18 8 Q23 12 23 17 Z" fill="${C.feu}" filter="url(#glow)"/><path d="M13 17 Q14 12 16 10 Q18 13 19 17Z" fill="${C.lanterne}"/>`],
+  ['feuillage_pin', () => `<circle cx="16" cy="16" r="15" fill="#13261F" opacity=".92"/>${[[16, 7], [8, 14], [24, 14], [12, 23], [21, 23], [16, 16]].map(([x, y]) => `<path d="M${x - 5} ${y + 3} L${x} ${y - 4} L${x + 5} ${y + 3} Z" fill="${HERBE_C}" opacity=".8"/>`).join('')}<circle cx="16" cy="16" r="15" fill="none" stroke="${HERBE_C}" stroke-opacity=".5" stroke-width="1"/>`],
+  ['phare_haut', () => `<rect width="32" height="32" fill="#2A2414"/><rect width="32" height="32" fill="${C.lanterne}" opacity=".45"/><path d="M16 0 V32 M0 16 H32" stroke="${C.nuit}" stroke-opacity=".55" stroke-width="1.2"/><circle cx="16" cy="16" r="10" fill="#FFF3CF" opacity=".25" filter="url(#soft)"/>`],
+  ['reserve_dessus', () => ''],
+];
+
 // ---------- Rendu ----------
 const SHEETS = [
   ['sprites/gardien_idle', 96, 96, 4, (i, n) => keeper(i, n, 'idle')],
@@ -310,6 +351,16 @@ for (const [name, fn] of ICONS) { await render('ui/' + name, 48, 48, svgDoc(48, 
   s += `<g font-family="Chakra Petch, sans-serif" font-weight="700"><text x="28" y="44" fill="${C.lanterne}" font-size="22" letter-spacing="2">NUIT 07</text><text x="${W - 28}" y="44" fill="${C.givre}" font-size="22" text-anchor="end">◆ 1 284</text></g>
   <rect x="28" y="62" width="220" height="10" rx="5" fill="${C.surface}" stroke="${C.lanterne}" stroke-opacity=".6"/><rect x="30" y="64" width="150" height="6" rx="3" fill="${C.lanterne}"/>`;
   await render('preview/falaise_du_phare_maquette', W, H, svgDoc(W, H, s));
+}
+
+
+// Tileset de la carte : même grille et mêmes ID que le tileset provisoire du Level designer.
+{
+  const cols = 8, rows = Math.ceil(FALAISE_TILES.length / cols); let b = '';
+  FALAISE_TILES.forEach(([, fn], i) => { b += `<g transform="translate(${(i % cols) * 32} ${Math.floor(i / cols) * 32})"><svg width="32" height="32" viewBox="0 0 32 32" overflow="hidden">${fn()}</svg></g>`; });
+  await render('tiles/tileset_falaise', cols * 32, rows * 32, svgDoc(cols * 32, rows * 32, b));
+  await render('tiles/tileset_falaise@2x', cols * 32, rows * 32, svgDoc(cols * 32, rows * 32, b), 2);
+  manifest.tilesetFalaise = { file: 'tiles/tileset_falaise.png', tileSize: 32, columns: cols, firstgid: 1, names: FALAISE_TILES.map(t => t[0]) };
 }
 
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 2));
