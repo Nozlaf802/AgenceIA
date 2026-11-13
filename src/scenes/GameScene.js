@@ -11,6 +11,7 @@ import { Weapons } from '../systems/Weapons.js';
 import { buildMap } from '../systems/MapBuilder.js';
 import { selectedMap } from './BootScene.js';
 import { Juice } from '../systems/Juice.js';
+import { Hazards } from '../systems/BossAI.js';
 import { applyVisual } from '../objects/visuals.js';
 import { ASSETS } from '../data/assets.js';
 
@@ -66,6 +67,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.juice = new Juice(this);
+    this.hazards = new Hazards(this);
+    this.boss = null; // mini-boss ou boss en cours (barre de vie dans l'interface)
     this.weapons = new Weapons(this);
     this.weapons.add('lantern'); // arme de départ
     this.spawner = new Spawner(this);
@@ -107,6 +110,7 @@ export class GameScene extends Phaser.Scene {
     const p = this.player;
     const cam = this.cameras.main;
 
+    p.slow = this.hazards.update(dt);
     p.move(this.controls.getDirection(), dt);
     this.lantern.update(dt, this.stats.drainMult);
 
@@ -135,7 +139,7 @@ export class GameScene extends Phaser.Scene {
         }
       }
       // Les créatures trop loin derrière sont replacées plus près.
-      if (d > 1600) {
+      if (d > 1600 && !e.def.boss) {
         const pt = this.spawner.spawnPoint();
         e.setPosition(pt.x, pt.y);
       }
@@ -213,8 +217,25 @@ export class GameScene extends Phaser.Scene {
     const n = Math.floor(this.lueurAcc);
     this.lueurAcc -= n;
     if (n > 0) this.dropLueur(e.x, e.y, n);
-    if (Math.random() < BALANCE.light.oilChance) this.dropPickup('oil', e.x + 8, e.y, 1);
+    if (e.def.boss) this.bossDown(e);
+    else if (Math.random() < BALANCE.light.oilChance) this.dropPickup('oil', e.x + 8, e.y, 1);
     e.kill();
+  }
+
+  setBoss(e) {
+    this.boss = e;
+    this.cameras.main.shake(250, 0.006);
+  }
+
+  // Mini-boss vaincu : coffre (une flamme au choix) + bidon d'huile garanti.
+  bossDown(e) {
+    if (this.boss === e) this.boss = null;
+    this.hazards.clear();
+    this.cameras.main.shake(300, 0.01);
+    this.juice.impact(e.x, e.y, 'fx-dissipation', 3);
+    this.dropPickup('chest', e.x, e.y, 1);
+    this.dropPickup('oil', e.x + 30, e.y + 10, 1);
+    this.events.emit('toast', 'ui.boss.down');
   }
 
   // ---------- Lueurs et huile ----------
@@ -276,6 +297,12 @@ export class GameScene extends Phaser.Scene {
   collect(o) {
     if (o.kind === 'luciole') {
       this.lantern.add(BALANCE.light.firefly);
+      return;
+    }
+    if (o.kind === 'chest') {
+      this.events.emit('toast', 'ui.pickup.chest');
+      this.pendingLevelUps++;
+      if (this.state === 'play') this.openLevelUp();
       return;
     }
     if (o.kind === 'oil') {

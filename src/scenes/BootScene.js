@@ -112,6 +112,16 @@ export class BootScene extends Phaser.Scene {
       g.generateTexture('oil', 14, 19);
     }
 
+    // Coffre (lâché par les mini-boss) : bois sombre, ferrures dorées.
+    if (!has('chest')) {
+      g.clear();
+      g.fillStyle(0x3a2a22, 1).fillRoundedRect(0, 8, 32, 20, 3);
+      g.fillStyle(0x6b4a34, 1).fillRoundedRect(0, 0, 32, 12, { tl: 8, tr: 8, bl: 0, br: 0 });
+      g.fillStyle(0xffd97a, 1).fillRect(0, 10, 32, 3).fillRect(13, 8, 6, 9);
+      g.lineStyle(2, 0xffd97a, 0.9).strokeRoundedRect(1, 1, 30, 26, 4);
+      g.generateTexture('chest', 32, 28);
+    }
+
     // Sol : damier discret pour bien sentir le déplacement.
     const t = VIEW.tileSize;
     if (!has('ground')) {

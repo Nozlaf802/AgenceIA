@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { applyVisual, flash } from './visuals.js';
 import { DEPTH } from '../config.js';
+import { BOSS_AI } from '../systems/BossAI.js';
 
 const FLOW = { x: 0, y: 0 };
 
@@ -14,12 +15,13 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
 
   spawn(id, def, x, y, hpMult, dmgMult) {
     this.enableBody(true, x, y, true, true);
-    applyVisual(this, id, def.radius);
+    // Corps physique plafonné : un gros boss passe quand même entre les rochers.
+    applyVisual(this, id, Math.min(def.radius, 22));
     this.anims?.play && this.scene.anims.exists(`${id}-walk`) && this.anims.play(`${id}-walk`, true);
     this.def = def;
     this.typeId = id;
     this.radius = def.radius;
-    this.maxHp = def.hp * hpMult;
+    this.maxHp = def.hp * (def.fixedHp ? 1 : hpMult);
     this.hp = this.maxHp;
     this.dmg = def.dmg * dmgMult;
     this.speed = def.speed * Phaser.Math.FloatBetween(0.9, 1.1);
@@ -31,6 +33,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.chill = 0;
     this.wasFrozen = false;
     this.wasSlowed = false;
+    this.ai = { phase: 'walk', t: 0 };
     this.clearTint();
     this.setAlpha(1).setDepth(y);
     const s = def.radius / 14;
@@ -82,6 +85,15 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     } else if (this.wasSlowed) {
       this.wasSlowed = false;
       this.clearTint();
+    }
+    if (this.def.tint && !this.isTinted) this.setTint(this.def.tint);
+    // Mini-boss et boss : comportement spécial (charge, invocations…).
+    const ai = this.def.ai && BOSS_AI[this.def.ai];
+    if (ai && ai(this, dt, target, this.scene)) {
+      if (slowed) this.body.velocity.scale(speedMult);
+      this.setDepth(this.y);
+      this.eyes.setVisible(false);
+      return d;
     }
     // Sur une carte, on suit le champ de flux pour contourner les obstacles.
     const f = level && d > 48 ? level.flowDir(this.x, this.y, FLOW) : null;

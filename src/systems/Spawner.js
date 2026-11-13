@@ -109,8 +109,21 @@ export class Spawner {
           if (!this.scene.level?.isBlockedAt(p.x, p.y)) this.spawn(ev.enemy, p.x, p.y);
         }
         break;
+      case 'boss': {
+        // Apparaît hors de l'écran, sur une case libre.
+        let pt = null;
+        for (let k = 0; k < 12 && !pt; k++) {
+          const c = this.edgePoint(Math.random() * Math.PI * 2, 40);
+          if (!this.scene.level?.isBlockedAt(c.x, c.y)) pt = c;
+        }
+        pt = pt || this.spawnPoint();
+        const e = this.spawn(ev.enemy, pt.x, pt.y);
+        if (e) this.scene.setBoss(e);
+        this.scene.events.emit('toast', `ui.boss.${ev.enemy}`);
+        break;
+      }
       default:
-        break; // elite, boss, chest… : à venir
+        break; // elite, chest… : à venir
     }
   }
 }

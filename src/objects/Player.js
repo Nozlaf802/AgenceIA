@@ -13,6 +13,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     this.radius = BALANCE.player.radius;
     this.hp = this.maxHp;
     this.iframes = 0;
+    this.slow = 1; // fils de la Tisseuse
   }
 
   get maxHp() {
@@ -20,7 +21,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
   }
 
   get speed() {
-    return BALANCE.player.speed * this.stats.speedMult;
+    return BALANCE.player.speed * this.stats.speedMult * this.slow;
   }
 
   heal(n) {

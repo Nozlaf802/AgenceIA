@@ -25,6 +25,7 @@ export class UIScene extends Phaser.Scene {
     this.timerText = this.add.text(0, 0, '00:00', { ...style, fontFamily: MONO, fontSize: '22px', fontStyle: '600' }).setOrigin(0.5, 0);
     this.killText = this.add.text(0, 0, '', { ...style, fontFamily: MONO, fontSize: '13px', color: '#aab2d0' }).setOrigin(0.5, 0);
     this.hpText = this.add.text(0, 0, '', { ...style, fontFamily: MONO, fontSize: '12px' });
+    this.bossText = this.add.text(0, 0, '', { ...style, fontSize: '14px', fontStyle: '700', color: '#e6d8ff' }).setOrigin(0.5, 1).setVisible(false);
     this.lightText = this.add.text(0, 0, '', { ...style, fontFamily: MONO, fontSize: '12px', color: '#ffe3a8' });
     const icon = (k) => (this.textures.exists(ASSETS.icons[k]) ? this.add.image(0, 0, ASSETS.icons[k]).setDisplaySize(20, 20) : null);
     this.hpIcon = icon('hp');
@@ -78,7 +79,7 @@ export class UIScene extends Phaser.Scene {
     this.pauseBtn.setPosition(width - 14, 30);
     this.hpIcon?.setPosition(26, 25);
     this.lightIcon?.setPosition(26, 47);
-    this.toastText.setPosition(width / 2, 110).setWordWrapWidth(Math.min(520, width - 40));
+    this.toastText.setPosition(width / 2, 124).setWordWrapWidth(Math.min(520, width - 40));
     if (this.modal?.relayout) this.modal.relayout();
   }
 
@@ -108,6 +109,17 @@ export class UIScene extends Phaser.Scene {
     this.killText.setText(`${pr.kills}`);
     if (this.killIcon) this.killIcon.setPosition(this.W / 2 - this.killText.width / 2 - 2, 52);
     this.levelText.setText(`Niv. ${pr.level}`);
+
+    // Barre de vie du mini-boss / boss, sous le chrono.
+    const boss = g.boss?.active ? g.boss : null;
+    this.bossText.setVisible(!!boss);
+    if (boss) {
+      const bw2 = Math.min(360, W - 40), bx = (W - bw2) / 2, by = 86;
+      b.fillStyle(0x000000, 0.6).fillRect(bx, by, bw2, 10);
+      b.fillStyle(0xb98cff, 1).fillRect(bx, by, bw2 * Math.max(0, boss.hp / boss.maxHp), 10);
+      b.lineStyle(1, COLORS.text, 0.35).strokeRect(bx, by, bw2, 10);
+      this.bossText.setText(boss.def.name).setPosition(W / 2, by - 2);
+    }
 
     if (this.debug) {
       const lpm = g.lueursPerMinute.map((v, i) => `${i}:${v ?? 0}`).join(' ');
