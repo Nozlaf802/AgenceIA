@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { VIEW } from '../config.js';
+import { VIEW, DEPTH } from '../config.js';
 import { BALANCE } from '../data/balance.js';
 import { WEAPONS, PASSIVES, FALLBACKS, MAX_WEAPONS, MAX_PASSIVES } from '../data/upgrades.js';
 import { Player } from '../objects/Player.js';
@@ -11,6 +11,8 @@ import { Weapons } from '../systems/Weapons.js';
 import { buildMap } from '../systems/MapBuilder.js';
 import { selectedMap } from './BootScene.js';
 import { Juice } from '../systems/Juice.js';
+import { applyVisual } from '../objects/visuals.js';
+import { ASSETS } from '../data/assets.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -39,7 +41,7 @@ export class GameScene extends Phaser.Scene {
     // (un motif de sol qui défile avec la caméra).
     this.level = buildMap(this, selectedMap());
     if (!this.level) {
-      this.ground = this.add.tileSprite(0, 0, 4, 4, 'ground').setScrollFactor(0).setDepth(-10);
+      this.ground = this.add.tileSprite(0, 0, 4, 4, 'ground').setScrollFactor(0).setDepth(DEPTH.ground);
     }
     const start = this.level?.start ?? { x: 0, y: 0 };
 
@@ -125,7 +127,7 @@ export class GameScene extends Phaser.Scene {
     const lightR = this.lantern.lightRadius;
     this.enemies.getChildren().forEach((e) => {
       if (!e.active) return;
-      const d = e.tick(dt, p, time, this.level);
+      const d = e.tick(dt, p, time, this.level, lightR);
       if (d < e.radius + p.radius) {
         if (p.hurt(e.dmg)) {
           cam.shake(90, 0.005);
@@ -205,7 +207,7 @@ export class GameScene extends Phaser.Scene {
     const dead = quiet ? (e.hp -= dmg) <= 0 : e.damage(dmg);
     if (!quiet) this.juice.number(e.x, e.y - e.radius, dmg);
     if (!dead) return;
-    this.juice.burst(e.x, e.y, e.def.color);
+    this.juice.burst(e.x, e.y, e.def.color, e.radius);
     this.progress.kills++;
     this.lueurAcc += e.def.lueurs;
     const n = Math.floor(this.lueurAcc);
@@ -231,22 +233,24 @@ export class GameScene extends Phaser.Scene {
       if (d > best) { best = d; far = o; }
     }
     far.value += value;
-    far.setScale(Math.min(1 + Math.log2(far.value) * 0.25, 2.5));
+    const base = ASSETS.visuals.lueur && far.hasArt ? ASSETS.visuals.lueur.scale : 1;
+    far.setScale(base * Math.min(1 + Math.log2(far.value) * 0.25, 2.5));
   }
 
   dropPickup(kind, x, y, value) {
     let o = this.pickups.find((it) => !it.active);
     if (!o) {
-      o = this.add.image(x, y, kind).setDepth(4);
+      o = this.add.sprite(x, y, kind);
       this.pickups.push(o);
     }
-    o.setTexture(kind).setActive(true).setVisible(true).setPosition(x, y);
+    applyVisual(o, kind);
+    o.setActive(true).setVisible(true).setPosition(x, y);
     o.kind = kind;
     o.value = value;
     o.attracted = false;
-    o.setScale(kind === 'lueur' ? Math.min(1 + Math.log2(value) * 0.25, 2.5) : 1);
+    if (kind === 'lueur') o.setScale(o.scaleX * Math.min(1 + Math.log2(value) * 0.25, 2.5));
     // Les lucioles brillent au-dessus de l'obscurité pour qu'on les repère de loin.
-    o.setDepth(kind === 'luciole' ? 650 : 4);
+    o.setDepth(kind === 'luciole' ? DEPTH.glow : DEPTH.pickup);
   }
 
   updatePickups(dt) {
@@ -364,6 +368,7 @@ export class GameScene extends Phaser.Scene {
 
   endRun(victory) {
     this.state = 'over';
+    if (victory) this.level?.lightLighthouse(this);
     this.physics.pause();
     this.player.setVelocity(0, 0);
     this.events.emit('over', {

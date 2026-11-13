@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
-import { fitCircle, animate } from './visuals.js';
+import { applyVisual, flash } from './visuals.js';
+import { DEPTH } from '../config.js';
 
 const FLOW = { x: 0, y: 0 };
 
@@ -7,15 +8,14 @@ const FLOW = { x: 0, y: 0 };
 export class Enemy extends Phaser.Physics.Arcade.Sprite {
   constructor(scene, x, y) {
     super(scene, x, y, 'E01');
-    this.eyes = scene.add.image(x, y, 'eyes').setDepth(600).setVisible(false);
+    this.eyes = scene.add.image(x, y, 'eyes').setDepth(DEPTH.eyes).setVisible(false);
     this.zigPhase = 0;
   }
 
   spawn(id, def, x, y, hpMult, dmgMult) {
     this.enableBody(true, x, y, true, true);
-    this.setTexture(id);
-    fitCircle(this, def.radius);
-    animate(this, true);
+    applyVisual(this, id, def.radius);
+    this.anims?.play && this.scene.anims.exists(`${id}-walk`) && this.anims.play(`${id}-walk`, true);
     this.def = def;
     this.typeId = id;
     this.radius = def.radius;
@@ -25,12 +25,12 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.speed = def.speed * Phaser.Math.FloatBetween(0.9, 1.1);
     this.zigPhase = Math.random() * Math.PI * 2;
     this.orbHitAt = 0;
-    this.setAlpha(1).setDepth(5);
+    this.setAlpha(1).setDepth(y);
     const s = def.radius / 14;
-    this.eyes.setScale(Math.max(0.6, s)).setVisible(true);
+    this.eyes.setScale(Math.max(0.6, s));
   }
 
-  tick(dt, target, time, level) {
+  tick(dt, target, time, level, lightR = Infinity) {
     const dx = target.x - this.x;
     const dy = target.y - this.y;
     const d = Math.hypot(dx, dy) || 1;
@@ -44,17 +44,23 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
       vy += (dx / d) * this.speed * w;
     }
     this.setVelocity(vx, vy);
+    this.setDepth(this.y);
     this.setFlipX(vx < 0);
-    const ex = (dx / d) * this.radius * 0.35;
-    this.eyes.setPosition(this.x + ex, this.y - this.radius * 0.25);
+    // Les yeux lumineux ne s'affichent que dans le noir (hors de la lumière),
+    // pour qu'on repère les créatures qui approchent.
+    const dark = !this.hasArt || d > lightR * 0.82;
+    this.eyes.setVisible(dark);
+    if (dark) {
+      const ex = (dx / d) * this.radius * 0.35;
+      this.eyes.setPosition(this.x + ex, this.y - this.radius * 0.25);
+    }
     return d;
   }
 
   // Renvoie true si la créature meurt.
   damage(n) {
     this.hp -= n;
-    this.setAlpha(0.45);
-    this.scene.time.delayedCall(70, () => this.active && this.setAlpha(1));
+    flash(this, 0xffffff, 60);
     return this.hp <= 0;
   }
 

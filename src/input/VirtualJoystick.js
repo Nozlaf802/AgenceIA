@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS } from '../config.js';
+import { COLORS, DEPTH } from '../config.js';
 
 // Joystick "flottant" : il apparaît là où le doigt touche l'écran.
 // Fonctionne aussi à la souris (pratique pour tester sur ordi).
@@ -13,9 +13,9 @@ export class VirtualJoystick {
 
     this.base = scene.add.circle(0, 0, radius, COLORS.joystickBase, 0.12)
       .setStrokeStyle(2, COLORS.joystickBase, 0.35)
-      .setScrollFactor(0).setDepth(1000).setVisible(false);
+      .setScrollFactor(0).setDepth(DEPTH.joystick).setVisible(false);
     this.knob = scene.add.circle(0, 0, radius * 0.45, COLORS.joystickKnob, 0.6)
-      .setScrollFactor(0).setDepth(1001).setVisible(false);
+      .setScrollFactor(0).setDepth(DEPTH.joystick + 1).setVisible(false);
 
     scene.input.on('pointerdown', this.onDown, this);
     scene.input.on('pointermove', this.onMove, this);

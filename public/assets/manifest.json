@@ -1,0 +1,303 @@
+{
+  "style": "Phare Vectoriel",
+  "palette": {
+    "nuit": "#070912",
+    "surface": "#10142A",
+    "lanterne": "#FFD97A",
+    "feu": "#FF5A36",
+    "givre": "#5EE8FF",
+    "foudre": "#B98CFF",
+    "brume": "#3A3F6B",
+    "creature": "#6A70A8",
+    "texte": "#E8ECFF",
+    "manteau": "#1D2A4A",
+    "manteauOmbre": "#131C33",
+    "peau": "#F1C9A5",
+    "bois": "#3A2A22",
+    "boisClair": "#6B4A34",
+    "roche": "#1B2035",
+    "rocheClair": "#2E3656",
+    "mousse": "#19282C",
+    "mousseClair": "#2F5A46",
+    "sable": "#1E1E2C",
+    "sableClair": "#3A3445",
+    "eau": "#0B1A2E",
+    "eauClair": "#1E4A6E"
+  },
+  "spritesheets": [
+    {
+      "key": "gardien_idle",
+      "file": "sprites/gardien_idle.png",
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "frames": 4
+    },
+    {
+      "key": "gardien_marche",
+      "file": "sprites/gardien_marche.png",
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "frames": 6
+    },
+    {
+      "key": "brumeux",
+      "file": "sprites/brumeux.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frames": 4
+    },
+    {
+      "key": "rodeur",
+      "file": "sprites/rodeur.png",
+      "frameWidth": 96,
+      "frameHeight": 96,
+      "frames": 4
+    },
+    {
+      "key": "spectre",
+      "file": "sprites/spectre.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frames": 4
+    },
+    {
+      "key": "boss_maree",
+      "file": "sprites/boss_maree.png",
+      "frameWidth": 256,
+      "frameHeight": 256,
+      "frames": 4
+    },
+    {
+      "key": "projectile_feu",
+      "file": "fx/projectile_feu.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 4
+    },
+    {
+      "key": "projectile_givre",
+      "file": "fx/projectile_givre.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 4
+    },
+    {
+      "key": "projectile_foudre",
+      "file": "fx/projectile_foudre.png",
+      "frameWidth": 32,
+      "frameHeight": 32,
+      "frames": 4
+    },
+    {
+      "key": "impact_feu",
+      "file": "fx/impact_feu.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frames": 6
+    },
+    {
+      "key": "impact_givre",
+      "file": "fx/impact_givre.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frames": 6
+    },
+    {
+      "key": "impact_foudre",
+      "file": "fx/impact_foudre.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frames": 6
+    },
+    {
+      "key": "dissipation",
+      "file": "fx/dissipation.png",
+      "frameWidth": 64,
+      "frameHeight": 64,
+      "frames": 6
+    },
+    {
+      "key": "eclat_lumiere",
+      "file": "fx/eclat_lumiere.png",
+      "frameWidth": 24,
+      "frameHeight": 24,
+      "frames": 4
+    }
+  ],
+  "tiles": {
+    "file": "tiles/tileset.png",
+    "tileSize": 64,
+    "columns": 8,
+    "names": [
+      "roche_1",
+      "roche_2",
+      "roche_3",
+      "mousse_1",
+      "mousse_2",
+      "sable_1",
+      "sable_2",
+      "planches_1",
+      "planches_2",
+      "pave_1",
+      "eau_1",
+      "eau_2",
+      "falaise_bord",
+      "sable_eau_bord",
+      "herbe_haute",
+      "vide"
+    ]
+  },
+  "props": [
+    {
+      "key": "phare",
+      "file": "props/phare.png",
+      "width": 192,
+      "height": 384
+    },
+    {
+      "key": "phare_allume",
+      "file": "props/phare_allume.png",
+      "width": 192,
+      "height": 384
+    },
+    {
+      "key": "rocher_grand",
+      "file": "props/rocher_grand.png",
+      "width": 128,
+      "height": 96
+    },
+    {
+      "key": "rocher_petit",
+      "file": "props/rocher_petit.png",
+      "width": 64,
+      "height": 48
+    },
+    {
+      "key": "arbre_mort",
+      "file": "props/arbre_mort.png",
+      "width": 128,
+      "height": 160
+    },
+    {
+      "key": "barque",
+      "file": "props/barque.png",
+      "width": 128,
+      "height": 80
+    },
+    {
+      "key": "caisse",
+      "file": "props/caisse.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "key": "tonneau",
+      "file": "props/tonneau.png",
+      "width": 64,
+      "height": 64
+    },
+    {
+      "key": "brasero",
+      "file": "props/brasero.png",
+      "width": 64,
+      "height": 96
+    },
+    {
+      "key": "ruine_mur",
+      "file": "props/ruine_mur.png",
+      "width": 192,
+      "height": 96
+    },
+    {
+      "key": "lanterne_sol",
+      "file": "props/lanterne_sol.png",
+      "width": 32,
+      "height": 48
+    },
+    {
+      "key": "touffe_herbe",
+      "file": "props/touffe_herbe.png",
+      "width": 32,
+      "height": 32
+    },
+    {
+      "key": "ossements",
+      "file": "props/ossements.png",
+      "width": 64,
+      "height": 32
+    }
+  ],
+  "icons": [
+    {
+      "key": "flamme_feu",
+      "file": "ui/flamme_feu.png",
+      "size": 48
+    },
+    {
+      "key": "flamme_givre",
+      "file": "ui/flamme_givre.png",
+      "size": 48
+    },
+    {
+      "key": "flamme_foudre",
+      "file": "ui/flamme_foudre.png",
+      "size": 48
+    },
+    {
+      "key": "coeur",
+      "file": "ui/coeur.png",
+      "size": 48
+    },
+    {
+      "key": "lanterne",
+      "file": "ui/lanterne.png",
+      "size": 48
+    },
+    {
+      "key": "eclat",
+      "file": "ui/eclat.png",
+      "size": 48
+    },
+    {
+      "key": "crane",
+      "file": "ui/crane.png",
+      "size": 48
+    }
+  ],
+  "tilesetFalaise": {
+    "file": "tiles/tileset_falaise.png",
+    "tileSize": 32,
+    "columns": 8,
+    "firstgid": 1,
+    "names": [
+      "eau_profonde",
+      "eau_ecume",
+      "sable",
+      "herbe",
+      "herbe_sombre",
+      "chemin_terre",
+      "dalles",
+      "falaise",
+      "planches",
+      "fleurs",
+      "cailloux",
+      "filet_algues",
+      "herbe_haute",
+      "flaque",
+      "os_epave",
+      "reserve_deco",
+      "rocher_petit",
+      "rocher_gros",
+      "mur_ruine",
+      "menhir",
+      "barque",
+      "tronc_pin",
+      "phare_base",
+      "caisse",
+      "brasero",
+      "feuillage_pin",
+      "phare_haut",
+      "phare_haut_allume"
+    ]
+  }
+}

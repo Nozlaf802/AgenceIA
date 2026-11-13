@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { ASSETS } from '../data/assets.js';
+import { DEPTH } from '../config.js';
 
 // Construit une carte Tiled (export JSON, jeu de tuiles intégré).
 // Conventions reconnues (voir public/assets/README.md) :
@@ -20,18 +21,38 @@ export function buildMap(scene, mapKey) {
   const tilesets = def.tilesets.map((ts) => map.addTilesetImage(ts.name, ts.key)).filter(Boolean);
 
   const walls = [];
+  const layers = [];
   map.layers.forEach((ld) => {
+    if (ld.visible === false) return; // calque caché (repli) : ni affiché ni bloquant
     const p = props(ld);
     const layer = map.createLayer(ld.name, tilesets, 0, 0);
     if (!layer) return;
-    // Sous l'obscurité (500) quoi qu'il arrive.
-    layer.setDepth(typeof p.depth === 'number' ? Math.min(p.depth, 400) : p.above ? 100 : -5);
+    layers.push(layer);
+    // « depth » ou « above » : au-dessus des personnages (triés par y), sous l'obscurité.
+    layer.setDepth(typeof p.depth === 'number' || p.above ? DEPTH.above : DEPTH.ground + 1);
     if (p.collides) layer.setCollisionByExclusion([-1]);
     else layer.setCollisionByProperty({ collides: true });
     walls.push(layer);
   });
 
   const objects = map.objects.flatMap((ol) => ol.objects);
+
+  // Décors du DA posés en objets image (type « prop », propriété « key » = clé du manifest).
+  // Triés par y comme les personnages (propriété « depth »).
+  const propImages = [];
+  objects.filter((o) => typeOf(o) === 'prop').forEach((o) => {
+    const p = props(o);
+    if (!p.key || !scene.textures.exists(p.key)) return;
+    const img = scene.add.image(o.x, o.y, p.key);
+    img.propKey = p.key;
+    propImages.push(img);
+    img
+      .setOrigin(p.originX ?? 0.5, p.originY ?? 1)
+      .setAngle(p.angle ?? 0)
+      .setScale(p.scale ?? 1)
+      .setFlipX(!!p.flipX)
+      .setDepth(p.depth ?? o.y);
+  });
   const startObj = objects.find((o) => typeOf(o) === 'player_start')
     || objects.find((o) => (o.name || '').toLowerCase() === 'joueur');
   const start = startObj ? { x: startObj.x, y: startObj.y } : { x: map.widthInPixels / 2, y: map.heightInPixels / 2 };
@@ -41,6 +62,8 @@ export function buildMap(scene, mapKey) {
     .map((o) => ({ rect: new Phaser.Geom.Rectangle(o.x, o.y, o.width, o.height), weight: props(o).poids ?? 1 }));
 
   const level = new Level(map, walls, start, spawns, fireflyZones);
+  level.layers = layers;
+  level.props = propImages;
   return level;
 }
 
@@ -65,6 +88,14 @@ class Level {
     });
     this.dist = new Int32Array(n).fill(-1);
     this.queue = new Int32Array(n);
+  }
+
+  // Victoire : le phare se rallume (tuile 27 éteinte -> 28 allumée, décor « phare » -> « phare_allume »).
+  lightLighthouse(scene) {
+    this.layers.forEach((l) => l.replaceByIndex(27, 28));
+    this.props.forEach((img) => {
+      if (img.propKey === 'phare' && scene.textures.exists('phare_allume')) img.setTexture('phare_allume');
+    });
   }
 
   isBlockedAt(x, y) {

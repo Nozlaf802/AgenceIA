@@ -1,4 +1,6 @@
 import { WEAPONS } from '../data/upgrades.js';
+import { applyVisual } from '../objects/visuals.js';
+import { DEPTH } from '../config.js';
 
 // Armes automatiques. Les collisions sont faites à la main (distance),
 // c'est simple et rapide pour quelques centaines de créatures.
@@ -49,7 +51,7 @@ export class Weapons {
   fireBolt(x, y, target, dmg, range) {
     let b = this.bolts.find((o) => !o.active);
     if (!b) {
-      b = this.scene.add.image(x, y, 'bolt').setDepth(8);
+      b = this.scene.add.image(x, y, 'bolt').setDepth(DEPTH.fx);
       this.bolts.push(b);
     }
     const a = Math.atan2(target.y - y, target.x - x);
@@ -79,7 +81,12 @@ export class Weapons {
   // --- Flamme orbitale
   syncOrbs() {
     const n = this.stats('orbit').count;
-    while (this.orbs.length < n) this.orbs.push(this.scene.add.image(0, 0, 'orb').setDepth(9));
+    while (this.orbs.length < n) {
+      const o = this.scene.add.sprite(0, 0, 'orb').setDepth(DEPTH.fx);
+      applyVisual(o, 'orb');
+      o.baseScale = o.scaleX;
+      this.orbs.push(o);
+    }
   }
 
   updateOrbs(dt, ps) {
@@ -90,8 +97,9 @@ export class Weapons {
     this.orbs.forEach((o, i) => {
       const a = this.orbAngle + (i / this.orbs.length) * Math.PI * 2;
       o.setPosition(p.x + Math.cos(a) * st.radius, p.y + Math.sin(a) * st.radius);
-      o.setScale(st.radius > 80 ? 1.25 : 1);
-      this.scene.forEachEnemyNear(o.x, o.y, 11 * o.scale, (e) => {
+      const big = st.radius > 80 ? 1.25 : 1;
+      o.setScale(o.baseScale * big).setRotation(a + Math.PI / 2);
+      this.scene.forEachEnemyNear(o.x, o.y, 11 * big, (e) => {
         if (now - e.orbHitAt < 0.5) return;
         e.orbHitAt = now;
         this.scene.damageEnemy(e, st.dmg * ps.dmgMult);

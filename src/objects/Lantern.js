@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS } from '../config.js';
+import { COLORS, DEPTH } from '../config.js';
 import { BALANCE } from '../data/balance.js';
 
 // Jauge Lumière + rendu lumière / obscurité.
@@ -20,7 +20,7 @@ export class Lantern {
 
     if (!scene.textures.exists(TEX)) Lantern.createMaskTexture(scene);
 
-    const depth = 500;
+    const depth = DEPTH.darkness;
     this.mask = scene.add.image(0, 0, TEX).setDepth(depth);
     this.sides = [0, 1, 2, 3].map(() =>
       scene.add.rectangle(0, 0, 10, 10, COLORS.darkness, COLORS.darknessAlpha)

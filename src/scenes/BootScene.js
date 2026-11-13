@@ -2,7 +2,7 @@ import Phaser from 'phaser';
 import { COLORS, VIEW } from '../config.js';
 import { BALANCE } from '../data/balance.js';
 import { ENEMIES } from '../data/enemies.js';
-import { ASSETS } from '../data/assets.js';
+import { ASSETS, manifest } from '../data/assets.js';
 
 export const selectedMap = () => {
   const q = new URLSearchParams(location.search).get('map');
@@ -18,11 +18,14 @@ export class BootScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.setPath('');
-    for (const [key, url] of Object.entries(ASSETS.images)) this.load.image(key, url);
-    for (const [key, sh] of Object.entries(ASSETS.spritesheets)) {
-      this.load.spritesheet(key, sh.url, { frameWidth: sh.frameWidth, frameHeight: sh.frameHeight });
+    // Visuels du DA (public/assets/manifest.json).
+    const base = 'assets/';
+    for (const sh of manifest.spritesheets || []) {
+      this.load.spritesheet(sh.key, base + sh.file, { frameWidth: sh.frameWidth, frameHeight: sh.frameHeight });
     }
+    for (const p of manifest.props || []) this.load.image(p.key, base + p.file);
+    for (const i of manifest.icons || []) this.load.image(i.key, base + i.file);
+
     const mapKey = selectedMap();
     const map = mapKey && ASSETS.maps[mapKey];
     if (map) {
@@ -31,20 +34,23 @@ export class BootScene extends Phaser.Scene {
     }
     // Un fichier manquant ne bloque pas le jeu : la forme provisoire prend le relais.
     this.load.on('loaderror', (file) => console.warn('Visuel introuvable :', file.src));
+
+    // Barre de chargement
+    const { width, height } = this.scale;
+    const bar = this.add.rectangle(width / 2 - 120, height / 2, 0, 6, COLORS.light).setOrigin(0, 0.5);
+    this.add.rectangle(width / 2, height / 2, 244, 10).setStrokeStyle(1, COLORS.light, 0.5);
+    this.load.on('progress', (v) => bar.setSize(240 * v, 6));
   }
 
   create() {
-    // Animations des spritesheets
-    for (const [key, sh] of Object.entries(ASSETS.spritesheets)) {
-      if (!this.textures.exists(key)) continue;
-      for (const [name, a] of Object.entries(sh.anims || {})) {
-        this.anims.create({
-          key: `${key}-${name}`,
-          frames: this.anims.generateFrameNumbers(key, { start: a.start, end: a.end }),
-          frameRate: a.frameRate ?? 10,
-          repeat: a.repeat ?? -1,
-        });
-      }
+    for (const [key, a] of Object.entries(ASSETS.anims)) {
+      if (!this.textures.exists(a.sheet) || this.anims.exists(key)) continue;
+      this.anims.create({
+        key,
+        frames: this.anims.generateFrameNumbers(a.sheet, { start: a.start, end: a.end }),
+        frameRate: a.frameRate ?? 10,
+        repeat: a.repeat ?? -1,
+      });
     }
 
     const g = this.make.graphics({ x: 0, y: 0 }, false);
@@ -116,6 +122,10 @@ export class BootScene extends Phaser.Scene {
     }
 
     g.destroy();
-    this.scene.start('Title');
+    // Attend les polices (Chakra Petch, IBM Plex Mono), 1,5 s maximum.
+    const fonts = document.fonts
+      ? Promise.all([document.fonts.load('700 20px "Chakra Petch"'), document.fonts.load('16px "IBM Plex Mono"')])
+      : Promise.resolve();
+    Promise.race([fonts, new Promise((r) => setTimeout(r, 1500))]).finally(() => this.scene.start('Title'));
   }
 }
