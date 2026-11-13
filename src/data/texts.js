@@ -14,6 +14,10 @@ export const TEXTS = {
   'ui.death.title': 'La brume t\'a englouti.',
   'ui.death.retry': 'Rallumer',
   'ui.win.title': 'L\'aube se lève !',
+  'ui.boss.MB1': 'Le Grand Brumelin surgit de la brume !',
+  'ui.boss.MB2': 'La Tisseuse tend ses fils… ne reste pas pris !',
+  'ui.boss.down': 'La brume recule ! Un coffre est tombé.',
+  'ui.pickup.chest': 'Coffre ! Choisis une flamme.',
   'ui.pause': 'La lanterne veille…',
 };
 
