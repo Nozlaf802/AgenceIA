@@ -368,6 +368,7 @@ export class GameScene extends Phaser.Scene {
 
   endRun(victory) {
     this.state = 'over';
+    if (victory) this.level?.lightLighthouse(this);
     this.physics.pause();
     this.player.setVelocity(0, 0);
     this.events.emit('over', {
