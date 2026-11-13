@@ -18,6 +18,22 @@ export const ENEMIES = {
     boss: true, ai: 'weaver', fixedHp: true, freezeMult: 0.25, tint: 0xd9a8ff,
     weaver: { keepDist: 220, summonEvery: 4, summonCount: 6, summonId: 'E02', threadEvery: 6, threads: 3, threadLife: 5, threadWarn: 0.7, threadSlow: 0.45 },
   },
+
+  // Boss du chapitre 1. Trois phases (100 %, 60 %, 25 % de PV). Ses vagues traversent
+  // les obstacles et sont annoncées `warn` secondes avant (règle du GDD : ≥ 0,8 s).
+  B01: {
+    name: 'La Marée', hp: 2500, dmg: 18, speed: 46, lueurs: 0, radius: 70, color: 0x2b3f6b,
+    boss: true, final: true, ai: 'tide', fixedHp: true, freezeMult: 0.15,
+    tide: {
+      wave: { warn: 1.1, speed: 330, width: 56, gap: 190, dmg: 22 },
+      phases: [
+        { at: 1, every: 4.5, waves: 1, summon: 0, speedMult: 1 },
+        { at: 0.6, every: 3.8, waves: 1, summon: 12, speedMult: 1.15 },
+        { at: 0.25, every: 3.2, waves: 2, summon: 16, speedMult: 1.4 },
+      ],
+      summonId: 'E01',
+    },
+  },
 };
 
 export const FALLBACK_ENEMY = 'E01';

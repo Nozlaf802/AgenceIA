@@ -23,6 +23,7 @@ export class Spawner {
   }
 
   update(dt) {
+    if (this.stopped) return;
     const m = this.minute;
     const row = BALANCE.minutes[m];
     const secInMinute = this.scene.elapsed - m * 60;
@@ -65,7 +66,7 @@ export class Spawner {
 
   // Sur une carte : un point d'apparition du Level designer, sinon le bord de l'écran.
   spawnPoint() {
-    const lv = this.scene.level;
+    const lv = this.scene.arena ? null : this.scene.level; // arène fermée : on sort du mur de brume
     const pl = this.scene.player;
     const sp = lv?.pickSpawn(this.scene.cameras.main.worldView, pl.x, pl.y);
     if (sp) return { x: sp.x + Phaser.Math.Between(-12, 12), y: sp.y + Phaser.Math.Between(-12, 12) };
@@ -80,7 +81,7 @@ export class Spawner {
     let x = p.x + Math.cos(angle) * dist;
     let y = p.y + Math.sin(angle) * dist;
     // Carte fermée : on reste dans les limites (juste à l'intérieur du bord).
-    const b = this.scene.level?.bounds;
+    const b = this.scene.arena || this.scene.level?.bounds;
     if (b) {
       x = Phaser.Math.Clamp(x, b.x + 24, b.right - 24);
       y = Phaser.Math.Clamp(y, b.y + 24, b.bottom - 24);
@@ -109,15 +110,23 @@ export class Spawner {
           if (!this.scene.level?.isBlockedAt(p.x, p.y)) this.spawn(ev.enemy, p.x, p.y);
         }
         break;
+      case 'arena':
+        this.scene.closeArena();
+        break;
       case 'boss': {
         // Apparaît hors de l'écran, sur une case libre.
-        let pt = null;
+        // Le boss final sort de son point « boss_spawn » s'il y en a un.
+        let pt = ENEMIES[ev.enemy]?.final && this.scene.level?.bossSpawn ? { ...this.scene.level.bossSpawn } : null;
         for (let k = 0; k < 12 && !pt; k++) {
           const c = this.edgePoint(Math.random() * Math.PI * 2, 40);
           if (!this.scene.level?.isBlockedAt(c.x, c.y)) pt = c;
         }
         pt = pt || this.spawnPoint();
-        const e = this.spawn(ev.enemy, pt.x, pt.y);
+        let e = this.spawn(ev.enemy, pt.x, pt.y);
+        if (!e) { // réserve pleine : on libère une place
+          this.scene.enemies.getFirstAlive()?.kill();
+          e = this.spawn(ev.enemy, pt.x, pt.y);
+        }
         if (e) this.scene.setBoss(e);
         this.scene.events.emit('toast', `ui.boss.${ev.enemy}`);
         break;

@@ -73,13 +73,51 @@ function weaver(e, dt, target, scene) {
   return true;
 }
 
-export const BOSS_AI = { charge, weaver };
+// La Marée : avance lentement, lance des vagues qui balaient l'arène (avec un trou
+// pour passer), et invoque des Brumelins en changeant de phase.
+function tide(e, dt, target, scene) {
+  const T = e.def.tide;
+  const ai = e.ai;
+  const ratio = e.hp / e.maxHp;
+  let phase = 0;
+  T.phases.forEach((ph, i) => { if (ratio <= ph.at) phase = i; });
+  if (ai.phase === 'walk') { ai.phase = 0; ai.wave = 2.5; }
+  if (phase > ai.phase) {
+    ai.phase = phase;
+    ai.wave = Math.min(ai.wave, 1.5);
+    scene.events.emit('toast', `ui.boss.phase${phase + 1}`);
+    scene.cameras.main.shake(400, 0.01);
+    const n = T.phases[phase].summon;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const x = target.x + Math.cos(a) * 320, y = target.y + Math.sin(a) * 320;
+      const r = scene.arena;
+      if (r && !r.contains(x, y)) continue;
+      if (!scene.level?.isBlockedAt(x, y)) scene.spawner.spawn(T.summonId, x, y);
+    }
+  }
+  const ph = T.phases[ai.phase];
+  e.speed = e.def.speed * ph.speedMult;
+  ai.wave -= dt;
+  if (ai.wave <= 0) {
+    ai.wave = ph.every;
+    // Une ou deux vagues : horizontale et/ou verticale, le trou est près de Lumen
+    // mais jamais pile dessus, pour qu'il faille bouger.
+    const axes = ph.waves > 1 ? ['x', 'y'] : [Math.random() < 0.5 ? 'x' : 'y'];
+    axes.forEach((axis) => scene.hazards.wave(axis, target, T.wave));
+  }
+  return false; // déplacement : poursuite normale
+}
+
+export const BOSS_AI = { charge, weaver, tide };
 
 // Dangers au sol : télégraphes de charge (traînée grise) et fils de brume.
 export class Hazards {
   constructor(scene) {
     this.scene = scene;
     this.g = scene.add.graphics().setDepth(DEPTH.pickup + 0.5);
+    // Les vagues restent visibles dans le noir (au-dessus de l'obscurité).
+    this.top = scene.add.graphics().setDepth(DEPTH.glow - 1);
     this.lines = [];
   }
 
@@ -94,9 +132,28 @@ export class Hazards {
     });
   }
 
+  // Vague qui traverse toute la zone (arène, sinon l'écran) le long d'un axe.
+  // axis 'x' : front vertical qui se déplace horizontalement.
+  wave(axis, target, w) {
+    const area = Phaser.Geom.Rectangle.Clone(this.scene.arena || this.scene.cameras.main.worldView);
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const span = axis === 'x' ? area.height : area.width;
+    const along = axis === 'x' ? target.y - area.y : target.x - area.x;
+    // Trou décalé de 150 à 300 px par rapport à Lumen.
+    let gap = along + (Math.random() < 0.5 ? -1 : 1) * Phaser.Math.Between(150, 300);
+    gap = Phaser.Math.Clamp(gap, w.gap / 2, span - w.gap / 2);
+    const start = axis === 'x' ? (dir > 0 ? area.x : area.right) : (dir > 0 ? area.y : area.bottom);
+    const end = axis === 'x' ? (dir > 0 ? area.right : area.x) : (dir > 0 ? area.bottom : area.y);
+    this.lines.push({
+      kind: 'wave', axis, dir, area, pos: start, end, gap, w, warn: w.warn, age: 0,
+      life: w.warn + Math.abs(end - start) / w.speed,
+    });
+  }
+
   clear() {
     this.lines = [];
     this.g.clear();
+    this.top.clear();
   }
 
   // Renvoie le facteur de vitesse de Lumen (1 = normal).
@@ -105,10 +162,13 @@ export class Hazards {
     const p = this.scene.player;
     let slow = 1;
     g.clear();
+    this.top.clear();
     for (const l of this.lines) {
       l.life -= dt;
       if (l.life <= 0) continue;
-      if (l.kind === 'tele') {
+      if (l.kind === 'wave') {
+        this.drawWave(this.top, l, p, dt);
+      } else if (l.kind === 'tele') {
         if (!l.e.active) { l.life = 0; continue; }
         const k = 1 - l.life / l.max; // se remplit pendant la visée
         const x2 = l.e.x + l.dir.x * l.length, y2 = l.e.y + l.dir.y * l.length;
@@ -128,6 +188,43 @@ export class Hazards {
     return slow;
   }
 }
+
+Hazards.prototype.drawWave = function drawWave(g, l, p, dt) {
+  const { area, axis, w } = l;
+  l.age += dt;
+  const g0 = l.gap - w.gap / 2, g1 = l.gap + w.gap / 2;
+  // Dessine un segment de front (en coordonnées « le long » de l'axe : a0..a1).
+  const band = (pos, a0, a1, thick, color, alpha) => {
+    if (a1 <= a0) return;
+    g.fillStyle(color, alpha);
+    if (axis === 'x') g.fillRect(pos - thick / 2, area.y + a0, thick, a1 - a0);
+    else g.fillRect(area.x + a0, pos - thick / 2, a1 - a0, thick);
+  };
+  const span = axis === 'x' ? area.height : area.width;
+  if (l.age < l.warn) {
+    // Annonce : le bord de départ clignote, le trou est marqué en clair.
+    const blink = 0.25 + 0.25 * Math.sin(l.age * 25);
+    band(l.pos, 0, g0, 18, 0x5ee8ff, blink);
+    band(l.pos, g1, span, 18, 0x5ee8ff, blink);
+    return;
+  }
+  l.pos += l.dir * w.speed * dt;
+  band(l.pos - l.dir * w.width * 0.6, 0, g0, w.width * 1.6, 0x3a3f6b, 0.35);
+  band(l.pos - l.dir * w.width * 0.6, g1, span, w.width * 1.6, 0x3a3f6b, 0.35);
+  band(l.pos, 0, g0, w.width, 0x9fdcff, 0.55);
+  band(l.pos, g1, span, w.width, 0x9fdcff, 0.55);
+  band(l.pos + l.dir * w.width * 0.4, 0, g0, 6, 0xe8ecff, 0.9);
+  band(l.pos + l.dir * w.width * 0.4, g1, span, 6, 0xe8ecff, 0.9);
+  // Touché si Lumen est dans le front et hors du trou.
+  const pp = axis === 'x' ? p.x : p.y;
+  const pa = axis === 'x' ? p.y - area.y : p.x - area.x;
+  if (Math.abs(pp - l.pos) < w.width / 2 + p.radius * 0.5 && (pa < g0 || pa > g1)) {
+    if (p.hurt(w.dmg)) {
+      this.scene.cameras.main.shake(120, 0.008);
+      this.scene.juice.number(p.x, p.y - 20, w.dmg, '#ff6b6b');
+    }
+  }
+};
 
 function distToSegment(px, py, l) {
   const vx = l.x2 - l.x1, vy = l.y2 - l.y1;

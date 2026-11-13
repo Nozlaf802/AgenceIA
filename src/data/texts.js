@@ -18,6 +18,12 @@ export const TEXTS = {
   'ui.boss.MB2': 'La Tisseuse tend ses fils… ne reste pas pris !',
   'ui.boss.down': 'La brume recule ! Un coffre est tombé.',
   'ui.pickup.chest': 'Coffre ! Choisis une flamme.',
+  'ui.boss.B01': 'La Marée : « Petite lueur… la mer va t\'avaler. »',
+  'ui.boss.phase2': 'La Marée enfle… les vagues accélèrent !',
+  'ui.boss.phase3': 'La Marée se déchaîne !',
+  'ui.boss.final': 'La Marée : « Le ressac… se retire… »',
+  'ui.arena.close': 'Un mur de brume se referme autour du phare…',
+  'ui.arena.soon': 'Rejoins le phare : la brume va tout fermer !',
   'ui.pause': 'La lanterne veille…',
 };
 

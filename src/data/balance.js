@@ -3,7 +3,9 @@
 
 export const BALANCE = {
   run: {
-    durationSec: 600, // 10 minutes
+    durationSec: 600, // 10 minutes (le boss arrive à 9:00)
+    // Victoire = battre La Marée. Filet de sécurité si le boss n'a pas pu apparaître.
+    noBossVictorySec: 660,
   },
 
   player: {
@@ -76,9 +78,12 @@ export const BALANCE = {
         { at: 0, type: 'swarm', enemy: 'E03', count: 30, from: 'left' },
         { at: 0, type: 'swarm', enemy: 'E03', count: 30, from: 'right' },
         { at: 30, type: 'ring', enemy: 'E01', count: 48 },
+        { at: 35, type: 'text', key: 'ui.arena.soon' },
+        { at: 50, type: 'arena' }, // 8:50 : mur de brume (fermeture_sec de la carte)
       ] },
-    // Minute 9 : le boss arrivera ici. En attendant, une dernière vague plus calme.
-    { spawnPerSec: 4, maxAlive: 160, mix: { E01: 0.4, E02: 0.3, E04: 0.3 },
-      events: [{ at: 0, type: 'text', key: 'ui.warning.final' }, { at: 10, type: 'ring', enemy: 'E04', count: 16 }] },
+    // Minute 9 : boss La Marée dans l'arène. Flux réduit, c'est elle qui invoque.
+    // La partie se gagne en la battant (le chrono continue après 10:00).
+    { spawnPerSec: 1.6, maxAlive: 60, mix: { E01: 0.5, E02: 0.3, E04: 0.2 },
+      events: [{ at: 0, type: 'boss', enemy: 'B01' }] },
   ],
 };
