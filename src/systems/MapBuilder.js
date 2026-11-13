@@ -155,7 +155,8 @@ class Level {
   }
 
   // Point d'apparition : hors caméra (64 px de marge) et à moins de maxDist de Lumen.
-  pickSpawn(view, px, py, maxDist = 1100) {
+  // La distance max suit la taille de la caméra (issue #11 : grands écrans).
+  pickSpawn(view, px, py, maxDist = Math.max(1100, Math.hypot(view.width, view.height) / 2 + 300)) {
     const out = new Phaser.Geom.Rectangle(view.x - 64, view.y - 64, view.width + 128, view.height + 128);
     const off = this.spawns.filter((s) => !out.contains(s.x, s.y));
     if (!off.length) return null;
