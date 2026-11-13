@@ -198,6 +198,20 @@ const TILES = [
 const PROPS = [
   ['phare', 192, 384, () => `
     ${shadow(96, 372, 70, 10)}
+    
+    <path d="M60 360 L74 120 L118 120 L132 360 Z" fill="${C.surface}" stroke="${C.texte}" stroke-opacity=".8" stroke-width="2"/>
+    <path d="M68 300 L124 300 L127 330 L65 330Z M71 220 L121 220 L123 250 L69 250Z M73 150 L119 150 L120 175 L72 175Z" fill="${C.feu}" opacity=".45"/>
+    <rect x="86" y="318" width="20" height="42" rx="10" fill="${C.nuit}" stroke="${C.bois}" stroke-width="3"/>
+    <rect x="90" y="196" width="12" height="18" rx="6" fill="${C.nuit}" stroke="${C.brume}" stroke-width="1.5"/>
+    <rect x="64" y="108" width="64" height="12" fill="${C.manteauOmbre}" stroke="${C.texte}" stroke-width="1.5"/>
+    <path d="M58 108 L134 108" stroke="${C.texte}" stroke-width="2"/>
+    <g stroke="${C.texte}" stroke-width="1.2">${[66, 78, 90, 102, 114, 126].map(x => `<line x1="${x}" y1="96" x2="${x}" y2="108"/>`).join('')}</g>
+    <rect x="74" y="66" width="44" height="42" fill="${C.nuit}" stroke="${C.texte}" stroke-width="2"/>
+    <rect x="80" y="72" width="32" height="32" rx="4" fill="#141A30"/><path d="M84 100 L100 76 M94 102 L108 82" stroke="${C.givre}" stroke-opacity=".25" stroke-width="2"/><path d="M96 72 V104" stroke="${C.brume}" stroke-width="1.5"/>
+    <path d="M70 66 L96 36 L122 66Z" fill="${C.feu}" stroke="${C.texte}" stroke-width="2"/>
+    <line x1="96" y1="36" x2="96" y2="22" stroke="${C.texte}" stroke-width="2"/><circle cx="96" cy="20" r="3" fill="${C.brume}"/>`],
+  ['phare_allume', 192, 384, () => `
+    ${shadow(96, 372, 70, 10)}
     <circle cx="96" cy="70" r="90" fill="url(#halo)"/>
     <path d="M60 360 L74 120 L118 120 L132 360 Z" fill="${C.surface}" stroke="${C.texte}" stroke-opacity=".8" stroke-width="2"/>
     <path d="M68 300 L124 300 L127 330 L65 330Z M71 220 L121 220 L123 250 L69 250Z M73 150 L119 150 L120 175 L72 175Z" fill="${C.feu}" opacity=".75"/>
@@ -271,8 +285,8 @@ const FALAISE_TILES = [
   ['caisse', () => `<rect x="4" y="5" width="24" height="23" rx="1.5" fill="${C.bois}" stroke="${C.boisClair}" stroke-width="1.4"/><path d="M4 5 L28 28 M28 5 L4 28" stroke="${C.boisClair}" stroke-width="1.4"/><rect x="4" y="5" width="24" height="3" fill="${C.boisClair}" opacity=".7"/>`],
   ['brasero', () => `<circle cx="16" cy="13" r="15" fill="url(#halo)"/><path d="M12 20 L10 30 M20 20 L22 30" stroke="${C.rocheClair}" stroke-width="1.8"/><path d="M6 17 L26 17 L23 22 L9 22 Z" fill="${C.surface}" stroke="${C.lanterne}" stroke-width="1"/><path d="M9 17 Q10 9 15 4 Q15 11 18 8 Q23 12 23 17 Z" fill="${C.feu}" filter="url(#glow)"/><path d="M13 17 Q14 12 16 10 Q18 13 19 17Z" fill="${C.lanterne}"/>`],
   ['feuillage_pin', () => `<circle cx="16" cy="16" r="15" fill="#13261F" opacity=".92"/>${[[16, 7], [8, 14], [24, 14], [12, 23], [21, 23], [16, 16]].map(([x, y]) => `<path d="M${x - 5} ${y + 3} L${x} ${y - 4} L${x + 5} ${y + 3} Z" fill="${HERBE_C}" opacity=".8"/>`).join('')}<circle cx="16" cy="16" r="15" fill="none" stroke="${HERBE_C}" stroke-opacity=".5" stroke-width="1"/>`],
-  ['phare_haut', () => `<rect width="32" height="32" fill="#2A2414"/><rect width="32" height="32" fill="${C.lanterne}" opacity=".45"/><path d="M16 0 V32 M0 16 H32" stroke="${C.nuit}" stroke-opacity=".55" stroke-width="1.2"/><circle cx="16" cy="16" r="10" fill="#FFF3CF" opacity=".25" filter="url(#soft)"/>`],
-  ['reserve_dessus', () => ''],
+  ['phare_haut', () => `<rect width="32" height="32" fill="#141A30"/><path d="M16 0 V32 M0 16 H32" stroke="${C.brume}" stroke-width="1.2"/><path d="M4 26 L12 18 M20 12 L27 5" stroke="${C.givre}" stroke-opacity=".22" stroke-width="1.4"/>`],
+  ['phare_haut_allume', () => `<rect width="32" height="32" fill="#2A2414"/><rect width="32" height="32" fill="${C.lanterne}" opacity=".45"/><path d="M16 0 V32 M0 16 H32" stroke="${C.nuit}" stroke-opacity=".55" stroke-width="1.2"/><circle cx="16" cy="16" r="10" fill="#FFF3CF" opacity=".25" filter="url(#soft)"/>`],
 ];
 
 // ---------- Rendu ----------

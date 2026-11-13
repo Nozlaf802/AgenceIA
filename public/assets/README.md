@@ -16,7 +16,7 @@ NODE_PATH=$(npm root -g) node tools/art/generate.mjs
 | `sprites/` | gardien (idle 4 frames, marche 6), brumeux, rôdeur, spectre, boss « La Marée » | spritesheets horizontales |
 | `fx/` | projectiles feu / givre / foudre, impacts, dissipation, éclat de lumière (XP) | spritesheets horizontales |
 | `tiles/tileset.png` | 16 tuiles 64×64, 8 colonnes, pour Tiled (ordre dans `manifest.tiles.names`) | tileset |
-| `props/` | phare, rochers, arbre mort, barque, caisse, tonneau, brasero, ruine, lanterne au sol, herbe, ossements | images seules |
+| `props/` | phare (éteint) et phare_allume, rochers, arbre mort, barque, caisse, tonneau, brasero, ruine, lanterne au sol, herbe, ossements | images seules |
 | `ui/` | icônes 48×48 : 3 flammes, cœur, lanterne, éclat, crâne | images seules |
 | `preview/` | maquette de la « Falaise du Phare » (référence visuelle, pas une carte jouable) | 1280×720 |
 
@@ -31,7 +31,9 @@ La lumière de la lanterne n'est qu'un halo léger dans le sprite : l'obscurité
 this.load.image('tiles_falaise', 'assets/tiles/tileset_falaise.png');
 ```
 
-Les tuiles sont raccordables, donc les grands obstacles faits de tuiles répétées (phare, gros rochers, barques, murs) restent propres. Pour un meilleur rendu, poser plus tard les décors de `props/` (phare, barque, rochers…) en images par-dessus, en gardant les tuiles d'obstacles comme collisions. Une version `@2x` existe pour les écrans haute densité. Aperçu de la carte entière : `preview/falaise_du_phare_carte_tileset.png`.
+Les tuiles sont raccordables, donc les grands obstacles faits de tuiles répétées (phare, gros rochers, barques, murs) restent propres. Pour un meilleur rendu, poser plus tard les décors de `props/` (phare, barque, rochers…) en images par-dessus, en gardant les tuiles d'obstacles comme collisions. **Phare éteint par défaut** : la tuile 27 `phare_haut` et le décor `props/phare.png` sont éteints. Les versions allumées servent à la victoire : tuile 28 `phare_haut_allume` (ancienne réserve) et `props/phare_allume.png`. Pour l'allumer en jeu : `dessus.replaceByIndex(27, 28)` ou changer la texture du décor.
+
+Une version `@2x` existe pour les écrans haute densité. Aperçu de la carte entière : `preview/falaise_du_phare_carte_tileset.png`.
 
 ## Chargement Phaser
 

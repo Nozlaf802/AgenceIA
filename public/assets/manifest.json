@@ -155,6 +155,12 @@
       "height": 384
     },
     {
+      "key": "phare_allume",
+      "file": "props/phare_allume.png",
+      "width": 192,
+      "height": 384
+    },
+    {
       "key": "rocher_grand",
       "file": "props/rocher_grand.png",
       "width": 128,
@@ -291,7 +297,7 @@
       "brasero",
       "feuillage_pin",
       "phare_haut",
-      "reserve_dessus"
+      "phare_haut_allume"
     ]
   }
 }
