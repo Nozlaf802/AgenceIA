@@ -1,8 +1,16 @@
 import Phaser from 'phaser';
-import { COLORS, WORLD } from '../config.js';
+import { VIEW } from '../config.js';
+import { BALANCE } from '../data/balance.js';
+import { WEAPONS, PASSIVES, FALLBACKS, MAX_WEAPONS, MAX_PASSIVES } from '../data/upgrades.js';
 import { Player } from '../objects/Player.js';
-import { InputController } from '../input/InputController.js';
+import { Enemy } from '../objects/Enemy.js';
 import { Lantern } from '../objects/Lantern.js';
+import { InputController } from '../input/InputController.js';
+import { Spawner } from '../systems/Spawner.js';
+import { Weapons } from '../systems/Weapons.js';
+import { buildMap } from '../systems/MapBuilder.js';
+import { selectedMap } from './BootScene.js';
+import { Juice } from '../systems/Juice.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -10,55 +18,322 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    const { width, height } = WORLD;
+    // 'play' | 'levelup' | 'paused' | 'over'
+    this.state = 'play';
+    this.elapsed = 0; // secondes de jeu (s'arrête en pause)
+    this.stats = {
+      dmgMult: 1, speedMult: 1, magnetMult: 1, cooldownMult: 1,
+      drainMult: 1, maxHpBonus: 0, regen: 0,
+    };
+    this.progress = { level: 1, xp: 0, xpNext: BALANCE.xpToNext(1), kills: 0 };
+    this.passives = {}; // id -> niveau
+    this.pendingLevelUps = 0;
+    this.auraTimer = 0;
+    this.darkWarned = false;
 
-    this.physics.world.setBounds(0, 0, width, height);
+    // Carte Tiled si elle existe, sinon arène infinie provisoire
+    // (un motif de sol qui défile avec la caméra).
+    this.level = buildMap(this, selectedMap());
+    if (!this.level) {
+      this.ground = this.add.tileSprite(0, 0, 4, 4, 'ground').setScrollFactor(0).setDepth(-10);
+    }
+    const start = this.level?.start ?? { x: 0, y: 0 };
 
-    // Sol de l'arène + bordure visible.
-    this.add.tileSprite(0, 0, width, height, 'ground').setOrigin(0, 0);
-    this.add.rectangle(width / 2, height / 2, width, height)
-      .setStrokeStyle(6, COLORS.border, 1);
-
-    this.player = new Player(this, width / 2, height / 2);
+    this.player = new Player(this, start.x, start.y, this.stats);
     this.controls = new InputController(this);
     this.lantern = new Lantern(this, this.player);
 
-    // Caméra qui suit le joueur en douceur, bloquée aux bords de l'arène.
-    const cam = this.cameras.main;
-    cam.setBounds(0, 0, width, height);
-    cam.startFollow(this.player, true, 0.12, 0.12);
-    cam.setRoundPixels(true);
+    this.enemies = this.physics.add.group({ classType: Enemy, maxSize: 260 });
+    this.pickups = []; // Lueurs et bidons d'huile (images simples, réutilisées)
 
-    // Chronomètre de partie (base pour les vagues du Level designer).
-    this.elapsed = 0;
+    if (this.level) {
+      const b = this.level.bounds;
+      this.physics.world.setBounds(b.x, b.y, b.width, b.height);
+      this.player.setCollideWorldBounds(true);
+      // Marge autour de la carte : le joueur ne passe jamais sous l'interface.
+      const m = 150;
+      this.cameras.main.setBounds(b.x - m, b.y - m, b.width + 2 * m, b.height + 2 * m);
+      this.level.walls.forEach((w) => {
+        this.physics.add.collider(this.player, w);
+        this.physics.add.collider(this.enemies, w);
+      });
+    }
+
+    this.juice = new Juice(this);
+    this.weapons = new Weapons(this);
+    this.weapons.add('lantern'); // arme de départ
+    this.spawner = new Spawner(this);
+
+    const cam = this.cameras.main;
+    cam.startFollow(this.player, true, 0.12, 0.12);
+    this.applyZoom();
+    this.scale.on('resize', this.onResize, this);
 
     this.scene.launch('UI');
 
-    // Pause automatique quand l'onglet perd le focus.
     this.game.events.on('blur', this.pauseGame, this);
-    this.events.once('shutdown', () => this.game.events.off('blur', this.pauseGame, this));
     this.input.keyboard.on('keydown-P', this.togglePause, this);
     this.input.keyboard.on('keydown-ESC', this.togglePause, this);
+    this.events.once('shutdown', () => {
+      this.game.events.off('blur', this.pauseGame, this);
+      this.scale.off('resize', this.onResize, this);
+    });
   }
 
-  update(_time, delta) {
-    this.elapsed += delta;
-    this.player.move(this.controls.getDirection());
-    this.lantern.update(delta);
+  applyZoom() {
+    const { width, height } = this.scale;
+    const z = Math.sqrt((width * height) / (VIEW.refWidth * VIEW.refHeight));
+    const zoom = Phaser.Math.Clamp(z, VIEW.minZoom, VIEW.maxZoom);
+    this.cameras.main.setZoom(zoom);
+    // Le sol (scrollFactor 0) est lui aussi zoomé autour du centre de l'écran :
+    // on l'agrandit d'autant pour qu'il couvre toujours tout l'écran.
+    this.ground?.setPosition(width / 2, height / 2).setSize(width / zoom + 4, height / zoom + 4);
   }
 
+  onResize() {
+    this.applyZoom();
+  }
+
+  update(time, delta) {
+    if (this.state !== 'play') return;
+    const dt = Math.min(delta, 50) / 1000; // évite les sauts après un onglet en arrière-plan
+    this.elapsed += dt;
+    const p = this.player;
+    const cam = this.cameras.main;
+
+    p.move(this.controls.getDirection(), dt);
+    this.lantern.update(dt, this.stats.drainMult);
+
+    // Sol infini (tient compte du zoom).
+    if (this.ground) {
+      this.ground.setTilePosition(cam.worldView.x, cam.worldView.y);
+    }
+
+    if (this.lantern.light <= 0) {
+      p.hp = Math.max(0, p.hp - BALANCE.light.darkDmgPerSec * dt);
+      if (!this.darkWarned) { this.darkWarned = true; this.events.emit('toast', 'ui.warning.dark'); }
+    } else if (this.lantern.light > 10) {
+      this.darkWarned = false;
+    }
+    if (this.stats.regen) p.heal(this.stats.regen * dt);
+
+    // Créatures : déplacement + contact.
+    const lightR = this.lantern.lightRadius;
+    this.enemies.getChildren().forEach((e) => {
+      if (!e.active) return;
+      const d = e.tick(dt, p, time);
+      if (d < e.radius + p.radius) {
+        if (p.hurt(e.dmg)) {
+          cam.shake(90, 0.005);
+          this.juice.number(p.x, p.y - 20, e.dmg, '#ff6b6b');
+        }
+      }
+      // Les créatures trop loin derrière sont replacées devant (carte infinie).
+      if (d > 1600) {
+        const pt = this.spawner.edgePoint();
+        e.setPosition(pt.x, pt.y);
+      }
+    });
+
+    // La lumière blesse légèrement les créatures dans l'aura.
+    this.auraTimer -= dt;
+    if (this.auraTimer <= 0) {
+      this.auraTimer = BALANCE.light.auraTick;
+      const L = BALANCE.light;
+      const dmg = Phaser.Math.Linear(L.auraDmgMin, L.auraDmgMax, this.lantern.charge) * this.stats.dmgMult;
+      this.forEachEnemyNear(p.x, p.y, lightR, (e) => this.damageEnemy(e, dmg, true));
+    }
+
+    this.weapons.update(dt);
+    this.updatePickups(dt);
+    this.spawner.update(dt);
+
+    if (p.hp <= 0) this.endRun(false);
+    else if (this.elapsed >= BALANCE.run.durationSec) this.endRun(true);
+  }
+
+  // ---------- Créatures : requêtes utilisées par les armes ----------
+  forEachEnemyNear(x, y, r, fn) {
+    this.enemies.getChildren().forEach((e) => {
+      if (!e.active) return;
+      const rr = r + e.radius;
+      const dx = e.x - x, dy = e.y - y;
+      if (dx * dx + dy * dy <= rr * rr) fn(e);
+    });
+  }
+
+  firstEnemyAt(x, y, r) {
+    let found = null;
+    this.enemies.getChildren().forEach((e) => {
+      if (found || !e.active) return;
+      const rr = r + e.radius;
+      const dx = e.x - x, dy = e.y - y;
+      if (dx * dx + dy * dy <= rr * rr) found = e;
+    });
+    return found;
+  }
+
+  nearestEnemies(x, y, range, n) {
+    const list = [];
+    this.enemies.getChildren().forEach((e) => {
+      if (!e.active) return;
+      const d2 = (e.x - x) ** 2 + (e.y - y) ** 2;
+      if (d2 <= range * range) list.push([d2, e]);
+    });
+    list.sort((a, b) => a[0] - b[0]);
+    return list.slice(0, n).map((x) => x[1]);
+  }
+
+  damageEnemy(e, dmg, quiet = false) {
+    if (!e.active) return;
+    const dead = quiet ? (e.hp -= dmg) <= 0 : e.damage(dmg);
+    if (!quiet) this.juice.number(e.x, e.y - e.radius, dmg);
+    if (!dead) return;
+    this.juice.burst(e.x, e.y, e.def.color);
+    this.progress.kills++;
+    const v = e.def.lueurs;
+    if (v >= 1 || Math.random() < v) this.dropPickup('lueur', e.x, e.y, Math.max(1, Math.round(v)));
+    if (Math.random() < BALANCE.light.oilChance) this.dropPickup('oil', e.x + 8, e.y, 1);
+    e.kill();
+  }
+
+  // ---------- Lueurs et huile ----------
+  dropPickup(kind, x, y, value) {
+    let o = this.pickups.find((it) => !it.active);
+    if (!o) {
+      o = this.add.image(x, y, kind).setDepth(4);
+      this.pickups.push(o);
+    }
+    o.setTexture(kind).setActive(true).setVisible(true).setPosition(x, y);
+    o.kind = kind;
+    o.value = value;
+    o.attracted = false;
+    o.setScale(kind === 'lueur' ? Math.min(1 + (value - 1) * 0.15, 1.8) : 1);
+  }
+
+  updatePickups(dt) {
+    const p = this.player;
+    const magnet = BALANCE.player.magnet * this.stats.magnetMult;
+    for (const o of this.pickups) {
+      if (!o.active) continue;
+      const dx = p.x - o.x, dy = p.y - o.y;
+      const d = Math.hypot(dx, dy);
+      if (d < magnet) o.attracted = true;
+      if (o.attracted) {
+        const sp = Math.max(380, p.speed * 1.6);
+        o.x += (dx / d) * sp * dt;
+        o.y += (dy / d) * sp * dt;
+      }
+      if (d < p.radius + 6) {
+        o.setActive(false).setVisible(false);
+        this.collect(o);
+      } else if (d > 2000) {
+        o.setActive(false).setVisible(false);
+      }
+    }
+  }
+
+  collect(o) {
+    if (o.kind === 'oil') {
+      this.lantern.add(BALANCE.light.oil);
+      this.events.emit('toast', 'ui.pickup.oil');
+      return;
+    }
+    this.lantern.add(BALANCE.light.perLueur * o.value);
+    if (!this.seenXpTuto) { this.seenXpTuto = true; this.events.emit('toast', 'ui.tuto.xp'); }
+    const pr = this.progress;
+    pr.xp += BALANCE.xpPerLueur * o.value;
+    while (pr.xp >= pr.xpNext) {
+      pr.xp -= pr.xpNext;
+      pr.level++;
+      pr.xpNext = BALANCE.xpToNext(pr.level);
+      this.pendingLevelUps++;
+    }
+    if (this.pendingLevelUps > 0 && this.state === 'play') this.openLevelUp();
+  }
+
+  // ---------- Montée de niveau ----------
+  rollCards() {
+    const cards = [];
+    const nW = Object.keys(this.weapons.owned).length;
+    const nP = Object.keys(this.passives).length;
+    for (const [id, w] of Object.entries(WEAPONS)) {
+      const lv = this.weapons.level(id);
+      if (lv >= 5 || (lv === 0 && nW >= MAX_WEAPONS)) continue;
+      cards.push({ kind: 'weapon', id, name: w.name, level: lv + 1, desc: w.desc[lv] });
+    }
+    for (const [id, ps] of Object.entries(PASSIVES)) {
+      const lv = this.passives[id] || 0;
+      if (lv >= 5 || (lv === 0 && nP >= MAX_PASSIVES)) continue;
+      cards.push({ kind: 'passive', id, name: ps.name, level: lv + 1, desc: ps.desc });
+    }
+    Phaser.Utils.Array.Shuffle(cards);
+    const out = cards.slice(0, 3);
+    for (const [id, f] of Object.entries(FALLBACKS)) {
+      if (out.length >= 3) break;
+      out.push({ kind: 'fallback', id, name: f.name, level: 0, desc: f.desc });
+    }
+    return out;
+  }
+
+  openLevelUp() {
+    this.pendingLevelUps--;
+    this.state = 'levelup';
+    this.physics.pause();
+    this.controls.joystick.reset();
+    this.events.emit('levelup', this.rollCards());
+  }
+
+  chooseCard(card) {
+    if (card.kind === 'weapon') this.weapons.add(card.id);
+    else if (card.kind === 'passive') {
+      this.passives[card.id] = (this.passives[card.id] || 0) + 1;
+      PASSIVES[card.id].apply(this.stats, this.player);
+    } else if (card.id === 'soin') this.player.heal(30);
+    else if (card.id === 'recharge') this.lantern.add(40);
+
+    if (this.pendingLevelUps > 0) {
+      this.events.emit('levelup', this.rollCards());
+      this.pendingLevelUps--;
+      return;
+    }
+    this.state = 'play';
+    this.physics.resume();
+  }
+
+  // ---------- Pause / fin ----------
   pauseGame() {
-    if (this.scene.isPaused()) return;
-    this.scene.pause();
-    this.scene.get('UI').showPause(true);
+    if (this.state !== 'play') return;
+    this.state = 'paused';
+    this.physics.pause();
+    this.controls.joystick.reset();
+    this.events.emit('pause', true);
   }
 
   togglePause() {
-    if (this.scene.isPaused()) {
-      this.scene.resume();
-      this.scene.get('UI').showPause(false);
+    if (this.state === 'paused') {
+      this.state = 'play';
+      this.physics.resume();
+      this.events.emit('pause', false);
     } else {
       this.pauseGame();
     }
+  }
+
+  endRun(victory) {
+    this.state = 'over';
+    this.physics.pause();
+    this.player.setVelocity(0, 0);
+    this.events.emit('over', {
+      victory,
+      time: this.elapsed,
+      kills: this.progress.kills,
+      level: this.progress.level,
+    });
+  }
+
+  restart() {
+    this.scene.stop('UI');
+    this.scene.restart();
   }
 }

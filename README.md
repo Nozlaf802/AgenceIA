@@ -23,14 +23,20 @@ npm run build    # version de production dans dist/
 
 ```
 src/
-  main.js               configuration Phaser (plein écran, physique arcade)
-  config.js             réglages du jeu (monde, joueur, lanterne, couleurs)
-  scenes/BootScene.js   textures provisoires générées par code
-  scenes/GameScene.js   arène, joueur, caméra, boucle de jeu, pause
-  scenes/UIScene.js     interface (chrono, PV, charge de lanterne, pause)
-  objects/Player.js     déplacement du joueur
-  objects/Lantern.js    rendu lumière/obscurité, rayon selon la charge
-  input/                clavier + joystick tactile réunis en une direction
+  main.js                configuration Phaser (plein écran, physique arcade)
+  config.js              zoom caméra et couleurs provisoires
+  data/balance.js        TOUT l'équilibrage : joueur, Lumière, XP, script de vagues
+  data/enemies.js        bestiaire (Brumelin, Filasse, Bruine, Chape)
+  data/upgrades.js       armes, passifs, cartes de secours
+  data/texts.js          textes du jeu
+  data/assets.js         catalogue des visuels (spritesheets, cartes Tiled)
+  scenes/                Boot (chargement), Title, Game, UI (HUD, cartes, pause, fin)
+  objects/               Player, Enemy, Lantern (lumière/obscurité)
+  systems/               Spawner (vagues), Weapons, MapBuilder (Tiled), Juice (effets)
+  input/                 clavier + joystick tactile réunis en une direction
+public/assets/           visuels du DA et cartes du Level designer (voir son README)
 ```
+
+Carte de démonstration Tiled : ajouter `?map=demo` à l'adresse.
 
 Moteur : [Phaser 4](https://phaser.io) + [Vite](https://vite.dev).

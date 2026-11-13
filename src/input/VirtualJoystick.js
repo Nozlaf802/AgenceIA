@@ -48,6 +48,11 @@ export class VirtualJoystick {
 
   onUp(pointer) {
     if (pointer.id !== this.pointerId) return;
+    this.reset();
+  }
+
+  // Relâche le joystick (appelé aussi à la pause : le doigt a pu être levé entre-temps).
+  reset() {
     this.pointerId = null;
     this.vector.set(0, 0);
     this.base.setVisible(false);
