@@ -191,6 +191,8 @@ for bx, by in BRASEROS:
 # 3. Chemins de terre (tracés AVANT obstacles, puis on dégage les obstacles dessus)
 # ---------------------------------------------------------------------------
 CHEMINS = []
+# repères que le tracé des chemins ne doit jamais effacer (issue #10)
+PROTEGES = {G["phare_base"], G["brasero"], G["menhir"]}
 
 
 def chemin(points, largeur=2):
@@ -200,9 +202,9 @@ def chemin(points, largeur=2):
 chemin([(CX, CY + 15), (CX, CY + 22), (CX - 2, CY + 32), (CX - 4, CY + 40)], 2)      # vers la grève
 chemin([(CX, CY - 15), (CX + 2, CY - 22), (CX, CY - 30), (CX - 2, CY - 38)], 2)      # vers les ruines
 chemin([(CX - 15, CY), (CX - 25, CY + 2), (CX - 38, CY - 1), (CX - 52, CY + 3)], 2)  # vers le sentier ouest
-chemin([(CX + 15, CY), (CX + 26, CY - 2), (CX + 40, CY + 1), (CX + 50, CY + 2)], 2)  # vers la lande est
+chemin([(CX + 15, CY), (CX + 26, CY - 2), (CX + 40, CY + 1), (CX + 39, CY + 2)], 2)  # vers la lande est (s'arrête au bord du cromlech)
 chemin([(CX - 2, CY - 38), (CX - 30, CY - 30), (CX - 52, CY + 3)], 2)               # ruines -> ouest
-chemin([(CX + 50, CY + 2), (CX + 34, CY + 30), (CX - 4, CY + 40)], 2)               # est -> grève
+chemin([(CX + 39, CY + 2), (CX + 34, CY + 30), (CX - 4, CY + 40)], 2)               # est -> grève
 
 
 def tracer_chemins():
@@ -214,7 +216,7 @@ def tracer_chemins():
                 x, y = x0 + (x1 - x0) * t, y0 + (y1 - y0) * t
                 disque(sol, x, y, larg, G["chemin_terre"],
                        seulement_si=lambda a, b: terre(a, b) and sol[b, a] not in (G["dalles"], G["sable"]))
-                disque(obs, x, y, larg + 1.5, 0, seulement_si=lambda a, b: obs[b, a] != G["phare_base"])
+                disque(obs, x, y, larg + 1.5, 0, seulement_si=lambda a, b: obs[b, a] not in PROTEGES)
 
 
 tracer_chemins()
@@ -499,6 +501,7 @@ obj_lucioles = [rectangle(n, "firefly_zone", x0, y0, x1, y1, {"poids": w}) for n
 
 obj_zones = [rectangle(n, "zone", x0, y0, x1, y1) for n, x0, y0, x1, y1 in ZONES]
 
+BRASEROS = [(x, y) for (x, y) in BRASEROS if obs[y, x] == G["brasero"]]
 obj_lumieres = [point(f"brasero_{i}", "light", x, y, {"rayon_px": 110, "couleur": "#ffb050", "intensite": 0.6, "allume_a_sec": 0})
                 for i, (x, y) in enumerate(BRASEROS)]
 obj_lumieres.append(point("phare", "light", CX, CY - 3, {"rayon_px": 600, "couleur": "#fff2c0", "intensite": 1.0, "allume_a_sec": -1}))
@@ -763,3 +766,6 @@ print(f"Arène du boss libre à {100*arene_libre:.0f} %")
 print(f"Bordures automatiques posées : {NB_BORDURES} tuiles")
 print(f"Décors en objets image : {len(obj_decors)} ({sum(1 for o in obj_decors if o['name']=='rocher_grand')} rochers)")
 print(f"Tileset étendu construit depuis : {TILESET_SOURCE}")
+n_men = int((obs_tuiles == G["menhir"]).sum()) // 4
+print(f"Menhirs : {n_men} · braseros (tuile = lumière) : {len(BRASEROS)} / {len(obj_lumieres) - 1}")
+assert len(BRASEROS) == len(obj_lumieres) - 1 == sum(1 for o in obj_decors if o['name'] == 'brasero')
