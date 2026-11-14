@@ -29,6 +29,7 @@ export const TEXTS = {
   'ui.god.title': '✦ GOD MODE ✦',
   'ui.god.sub': 'Tu as trouvé le secret du gardien.',
   'ui.god.rain': 'Une pluie de Lueurs tombe du ciel !',
+  'ui.god.rainStop': 'Pluie d\'XP arrêtée.',
   'ui.god.max': 'Niveau max atteint : toutes tes flammes sont au maximum.',
   'ui.god.cards': 'Pouvoirs appliqués !',
   'ui.god.ultimate': 'GOD MODE ULTIME : Lumen devient le phare !',

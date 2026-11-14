@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, VIEW } from '../config.js';
+import { COLORS, VIEW, setupHudCamera, viewSize } from '../config.js';
 import { BALANCE } from '../data/balance.js';
 import { ENEMIES } from '../data/enemies.js';
 import { ASSETS, manifest } from '../data/assets.js';
@@ -36,7 +36,8 @@ export class BootScene extends Phaser.Scene {
     this.load.on('loaderror', (file) => console.warn('Visuel introuvable :', file.src));
 
     // Barre de chargement
-    const { width, height } = this.scale;
+    setupHudCamera(this);
+    const { width, height } = viewSize(this);
     const bar = this.add.rectangle(width / 2 - 120, height / 2, 0, 6, COLORS.light).setOrigin(0, 0.5);
     this.add.rectangle(width / 2, height / 2, 244, 10).setStrokeStyle(1, COLORS.light, 0.5);
     this.load.on('progress', (v) => bar.setSize(240 * v, 6));

@@ -87,6 +87,22 @@ export class GodMode {
     this.scene.events.emit('toast', 'ui.god.rain');
   }
 
+  // Sortie de la pluie (Échap ou croix) : plus de gouttes, et si un choix de
+  // carte est ouvert on le ferme et on reprend la partie.
+  stopRain() {
+    const s = this.scene;
+    if (!this.rain) return;
+    this.rain = false;
+    this.drops.forEach((d) => d.setActive(false).setVisible(false));
+    if (s.state === 'levelup') {
+      s.pendingLevelUps = 0;
+      s.events.emit('god-rain-stop');
+      s.state = 'play';
+      s.physics.resume();
+    }
+    s.events.emit('toast', 'ui.god.rainStop');
+  }
+
   spawnDrop() {
     const s = this.scene;
     const p = s.player;

@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, FONTS } from '../config.js';
+import { COLORS, FONTS, setupHudCamera, viewSize } from '../config.js';
 import { ASSETS } from '../data/assets.js';
 import { t } from '../data/texts.js';
 
@@ -12,6 +12,7 @@ export class TitleScene extends Phaser.Scene {
   }
 
   create() {
+    setupHudCamera(this);
     this.build();
     this.scale.on('resize', this.build, this);
     this.events.once('shutdown', () => this.scale.off('resize', this.build, this));
@@ -21,7 +22,7 @@ export class TitleScene extends Phaser.Scene {
 
   build() {
     this.children.removeAll(true);
-    const { width: w, height: h } = this.scale;
+    const { width: w, height: h } = viewSize(this);
     // Halo de lanterne derrière le titre
     const halo = this.add.graphics();
     for (let i = 10; i > 0; i--) {
