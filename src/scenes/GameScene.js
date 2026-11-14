@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { VIEW, DEPTH } from '../config.js';
+import { VIEW, DEPTH, DPR } from '../config.js';
 import { BALANCE } from '../data/balance.js';
 import { WEAPONS, PASSIVES, FALLBACKS, MAX_WEAPONS, MAX_PASSIVES } from '../data/upgrades.js';
 import { Player } from '../objects/Player.js';
@@ -81,7 +81,8 @@ export class GameScene extends Phaser.Scene {
 
     this.game.events.on('blur', this.pauseGame, this);
     this.input.keyboard.on('keydown-P', this.togglePause, this);
-    this.input.keyboard.on('keydown-ESC', this.togglePause, this);
+    // Échap arrête la pluie d'XP du God mode si elle tombe, sinon met en pause.
+    this.input.keyboard.on('keydown-ESC', () => (this.god.rain ? this.god.stopRain() : this.togglePause()));
     this.events.once('shutdown', () => {
       this.game.events.off('blur', this.pauseGame, this);
       this.scale.off('resize', this.onResize, this);
@@ -97,8 +98,9 @@ export class GameScene extends Phaser.Scene {
 
   applyZoom() {
     const { width, height } = this.scale;
-    const z = Math.sqrt((width * height) / (VIEW.refWidth * VIEW.refHeight));
-    const zoom = Phaser.Math.Clamp(z, VIEW.minZoom, VIEW.maxZoom);
+    // Surface calculée en pixels CSS, puis ×DPR : même champ de vision qu'avant, mais net.
+    const z = Math.sqrt((width * height) / (DPR * DPR * VIEW.refWidth * VIEW.refHeight));
+    const zoom = Phaser.Math.Clamp(z, VIEW.minZoom, VIEW.maxZoom) * DPR;
     this.cameras.main.setZoom(zoom);
     // Le sol (scrollFactor 0) est lui aussi zoomé autour du centre de l'écran :
     // on l'agrandit d'autant pour qu'il couvre toujours tout l'écran.

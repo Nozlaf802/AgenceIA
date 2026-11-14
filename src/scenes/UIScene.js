@@ -1,5 +1,5 @@
 import Phaser from 'phaser';
-import { COLORS, FONTS } from '../config.js';
+import { COLORS, FONTS, setupHudCamera, viewSize } from '../config.js';
 import { ASSETS } from '../data/assets.js';
 import { t } from '../data/texts.js';
 import { WEAPONS, PASSIVES } from '../data/upgrades.js';
@@ -20,6 +20,7 @@ export class UIScene extends Phaser.Scene {
 
   create() {
     this.game_ = this.scene.get('Game');
+    setupHudCamera(this);
     const style = { fontFamily: FONT, fontSize: '16px', color: '#ffffff' };
 
     this.bars = this.add.graphics();
@@ -59,6 +60,11 @@ export class UIScene extends Phaser.Scene {
         if (this.timerTaps.length >= 5) { this.timerTaps = []; this.game_.god.open(); }
       });
     this.secret = '';
+    // Croix pour sortir de la pluie d'XP (visible seulement pendant la pluie).
+    this.rainBtn = this.add.text(0, 0, '✕ Pluie d\'XP', {
+      ...style, fontSize: '13px', color: '#ffe3a8', backgroundColor: '#000000aa', padding: { x: 8, y: 6 },
+    }).setOrigin(1, 0).setVisible(false).setInteractive({ useHandCursor: true })
+      .on('pointerdown', () => this.game_.god.stopRain());
 
     this.pauseBtn = this.add.text(0, 0, '❚❚', { ...style, fontSize: '22px' })
       .setOrigin(1, 0).setInteractive({ useHandCursor: true })
@@ -74,6 +80,7 @@ export class UIScene extends Phaser.Scene {
     on('pause', (v) => (v ? this.showPause() : this.closeModal()));
     on('over', this.showOver);
     on('god-open', this.showGodMenu);
+    on('god-rain-stop', () => { this.cards = null; this.closeModal(); });
 
     this.keyHandler = (e) => this.onKey(e);
     this.input.keyboard.on('keydown', this.keyHandler);
@@ -84,13 +91,14 @@ export class UIScene extends Phaser.Scene {
   }
 
   layout() {
-    const { width } = this.scale;
+    const { width } = viewSize(this);
     this.W = width;
     this.timerText.setPosition(width / 2, 18);
     this.killText.setPosition(width / 2 + (this.killIcon ? 10 : 0), 44);
     this.killIcon?.setDisplaySize(16, 16);
     this.levelText.setPosition(width - 12, 10);
     this.pauseBtn.setPosition(width - 14, 30);
+    this.rainBtn.setPosition(width - 10, 62);
     this.hpIcon?.setPosition(26, 25);
     this.lightIcon?.setPosition(26, 47);
     this.toastText.setPosition(width / 2, 124).setWordWrapWidth(Math.min(520, width - 40));
@@ -122,6 +130,7 @@ export class UIScene extends Phaser.Scene {
     this.timerText.setText(fmtTime(g.elapsed));
     this.killText.setText(`${pr.kills}`);
     if (this.killIcon) this.killIcon.setPosition(this.W / 2 - this.killText.width / 2 - 2, 52);
+    this.rainBtn.setVisible(!!g.god?.rain);
     const ult = g.god?.ultimate;
     this.levelText.setText(ult ? `✦ GOD · Niv. ${pr.level}` : `Niv. ${pr.level}`).setColor(ult ? '#ffd36b' : '#cfe9ff');
 
@@ -165,7 +174,7 @@ export class UIScene extends Phaser.Scene {
     const c = this.add.container(0, 0).setDepth(100);
     c.relayout = () => {
       c.removeAll(true);
-      const { width, height } = this.scale;
+      const { width, height } = viewSize(this);
       c.add(this.add.rectangle(0, 0, width, height, 0x05060c, 0.72).setOrigin(0, 0).setInteractive());
       build(c, width, height);
     };
@@ -244,6 +253,12 @@ export class UIScene extends Phaser.Scene {
         const ik = ASSETS.icons[card.kind === 'passive' ? 'passive' : card.id];
         this.button(c, x, y, cw, ch, `${i + 1}. ${card.name}${lv}`, () => pick(i), card.desc, ik);
       });
+      if (this.game_.god?.rain) {
+        c.add(this.add.text(w - 12, 62, '✕', { fontFamily: FONT, fontSize: '26px', color: '#ffe3a8' })
+          .setOrigin(1, 0).setPadding(10, 6).setInteractive({ useHandCursor: true })
+          .on('pointerdown', () => this.game_.god.stopRain()));
+        c.add(this.add.text(w - 54, 72, 'Arrêter la pluie', { fontFamily: FONT, fontSize: '13px', color: '#aab2d0' }).setOrigin(1, 0));
+      }
     });
     this.modalKeys = { 1: () => pick(0), 2: () => pick(1), 3: () => pick(2) };
   }

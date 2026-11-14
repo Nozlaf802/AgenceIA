@@ -1,12 +1,12 @@
 import Phaser from 'phaser';
-import { COLORS, DEPTH } from '../config.js';
+import { COLORS, DEPTH, DPR } from '../config.js';
 
 // Joystick "flottant" : il apparaît là où le doigt touche l'écran.
 // Fonctionne aussi à la souris (pratique pour tester sur ordi).
 export class VirtualJoystick {
   constructor(scene, { radius = 60 } = {}) {
     this.scene = scene;
-    this.radius = radius;
+    this.radius = radius * DPR; // en pixels du canvas
     this.vector = new Phaser.Math.Vector2(0, 0);
     this.pointerId = null;
     this.origin = new Phaser.Math.Vector2();
@@ -24,12 +24,23 @@ export class VirtualJoystick {
     scene.events.once('shutdown', () => this.destroy());
   }
 
+  // Les objets en scrollFactor 0 sont quand même zoomés autour du centre par la
+  // caméra : on compense pour que le joystick apparaisse pile sous le doigt.
+  place(obj, x, y) {
+    const cam = this.scene.cameras.main;
+    const z = cam.zoom;
+    const cx = cam.width / 2, cy = cam.height / 2;
+    obj.setPosition(cx + (x - cx) / z, cy + (y - cy) / z).setScale(DPR / z);
+  }
+
   onDown(pointer) {
     if (this.pointerId !== null) return;
     this.pointerId = pointer.id;
     this.origin.set(pointer.x, pointer.y);
-    this.base.setPosition(pointer.x, pointer.y).setVisible(true);
-    this.knob.setPosition(pointer.x, pointer.y).setVisible(true);
+    this.place(this.base, pointer.x, pointer.y);
+    this.place(this.knob, pointer.x, pointer.y);
+    this.base.setVisible(true);
+    this.knob.setVisible(true);
     this.vector.set(0, 0);
   }
 
@@ -42,7 +53,7 @@ export class VirtualJoystick {
     const angle = Math.atan2(dy, dx);
     const kx = Math.cos(angle) * clamped;
     const ky = Math.sin(angle) * clamped;
-    this.knob.setPosition(this.origin.x + kx, this.origin.y + ky);
+    this.place(this.knob, this.origin.x + kx, this.origin.y + ky);
     this.vector.set(kx / this.radius, ky / this.radius);
   }
 

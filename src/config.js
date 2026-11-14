@@ -1,5 +1,16 @@
 // Réglages techniques et couleurs provisoires (en attendant la charte visuelle).
 // Les valeurs de gameplay sont dans src/data/balance.js.
+// Écrans haute densité (Retina, mobiles) : le canvas est rendu à la vraie
+// résolution de l'écran (plafonnée à 2 pour garder un bon framerate), puis
+// affiché à la taille CSS. Sans ça le navigateur agrandit l'image et tout est flou.
+export const DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+// Interfaces (titre, HUD) : on travaille en pixels « CSS » ; la caméra zoome de DPR.
+export function setupHudCamera(scene) {
+  scene.cameras.main.setOrigin(0, 0).setZoom(DPR);
+}
+export const viewSize = (scene) => ({ width: scene.scale.width / DPR, height: scene.scale.height / DPR });
+
 export const VIEW = {
   // Surface de référence (doc Level design : 1280×720). La caméra zoome pour
   // que chaque écran voie à peu près la même surface de jeu.
