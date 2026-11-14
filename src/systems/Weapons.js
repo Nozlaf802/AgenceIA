@@ -27,8 +27,24 @@ export class Weapons {
     if (id === 'orbit') this.syncOrbs();
   }
 
+  // God mode : niveau imposé (0 = arme retirée, 6 à 10 = surcharges).
+  setLevel(id, n) {
+    if (n > 0) this.owned[id] = n;
+    else delete this.owned[id];
+    if (id === 'orbit') this.syncOrbs();
+  }
+
   stats(id) {
-    return WEAPONS[id].levels[this.level(id) - 1];
+    const lv = this.level(id);
+    const base = WEAPONS[id].levels[Math.min(lv, 5) - 1];
+    if (lv <= 5) return base;
+    // Surcharge (God mode) : +25 % dégâts par niveau au-delà de 5,
+    // tir plus rapide, et un projectile de plus tous les 2 niveaux.
+    const x = lv - 5;
+    const st = { ...base, dmg: base.dmg * (1 + 0.25 * x), count: base.count + Math.floor(x / 2) };
+    if (base.cd) st.cd = base.cd * 0.93 ** x;
+    if (base.bounces) st.bounces = base.bounces + x;
+    return st;
   }
 
   update(dt) {
@@ -88,7 +104,8 @@ export class Weapons {
 
   // --- Flamme orbitale
   syncOrbs() {
-    const n = this.stats('orbit').count;
+    const n = this.level('orbit') ? this.stats('orbit').count : 0;
+    while (this.orbs.length > n) this.orbs.pop().destroy();
     while (this.orbs.length < n) {
       const o = this.scene.add.sprite(0, 0, 'orb').setDepth(DEPTH.fx);
       applyVisual(o, 'orb');

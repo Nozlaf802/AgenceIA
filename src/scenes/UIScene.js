@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { COLORS, FONTS } from '../config.js';
 import { ASSETS } from '../data/assets.js';
 import { t } from '../data/texts.js';
+import { WEAPONS, PASSIVES } from '../data/upgrades.js';
+import { GOD } from '../systems/GodMode.js';
 
 const FONT = FONTS.title;
 const MONO = FONTS.mono;
@@ -47,6 +49,17 @@ export class UIScene extends Phaser.Scene {
     }).setVisible(this.debug);
     this.input.keyboard.on('keydown-F2', () => { this.debug = !this.debug; this.debugText.setVisible(this.debug); });
 
+    // Easter egg mobile : 5 touches rapides sur le chrono ouvrent le God mode.
+    this.timerTaps = [];
+    this.timerText.setInteractive(new Phaser.Geom.Rectangle(-24, -14, this.timerText.width + 48, this.timerText.height + 28), Phaser.Geom.Rectangle.Contains)
+      .on('pointerdown', () => {
+        const now = this.time.now;
+        this.timerTaps = this.timerTaps.filter((x) => now - x < 2500);
+        this.timerTaps.push(now);
+        if (this.timerTaps.length >= 5) { this.timerTaps = []; this.game_.god.open(); }
+      });
+    this.secret = '';
+
     this.pauseBtn = this.add.text(0, 0, '❚❚', { ...style, fontSize: '22px' })
       .setOrigin(1, 0).setInteractive({ useHandCursor: true })
       .on('pointerdown', () => this.game_.togglePause());
@@ -60,6 +73,7 @@ export class UIScene extends Phaser.Scene {
     on('levelup', this.showLevelUp);
     on('pause', (v) => (v ? this.showPause() : this.closeModal()));
     on('over', this.showOver);
+    on('god-open', this.showGodMenu);
 
     this.keyHandler = (e) => this.onKey(e);
     this.input.keyboard.on('keydown', this.keyHandler);
@@ -108,7 +122,8 @@ export class UIScene extends Phaser.Scene {
     this.timerText.setText(fmtTime(g.elapsed));
     this.killText.setText(`${pr.kills}`);
     if (this.killIcon) this.killIcon.setPosition(this.W / 2 - this.killText.width / 2 - 2, 52);
-    this.levelText.setText(`Niv. ${pr.level}`);
+    const ult = g.god?.ultimate;
+    this.levelText.setText(ult ? `✦ GOD · Niv. ${pr.level}` : `Niv. ${pr.level}`).setColor(ult ? '#ffd36b' : '#cfe9ff');
 
     // Barre de vie du mini-boss / boss, sous le chrono.
     const boss = g.boss?.active ? g.boss : null;
@@ -233,13 +248,113 @@ export class UIScene extends Phaser.Scene {
     this.modalKeys = { 1: () => pick(0), 2: () => pick(1), 3: () => pick(2) };
   }
 
-  showOver({ victory, time, kills, level }) {
+  // ---------- God mode (easter egg) ----------
+  closeGod() {
+    this.closeModal();
+    this.game_.god.close();
+  }
+
+  showGodMenu() {
+    const god = this.game_.god;
+    this.tweens.killTweensOf(this.toastText);
+    this.toastText.setAlpha(0);
+    const run = (fn) => { this.closeGod(); fn(); };
+    const opts = [
+      ['1. Pluie d\'XP', 'Des Lueurs tombent sur toi jusqu\'au niveau max. Tu choisis tes flammes, tu restes mortel.', () => run(() => god.startRain())],
+      ['2. Pouvoirs à volonté', 'Prends chaque carte autant de fois que tu veux, avec + et −.', () => this.showGodCards()],
+      ['3. GOD MODE ultime', 'Invincible, tout au max, la nuit se lève et deux faisceaux de phare balaient la brume.', () => run(() => god.activateUltimate())],
+    ];
+    this.makeModal((c, w, h) => {
+      // Écran bas (mobile en paysage) : les 3 choix côte à côte.
+      const row = h < 480 && w >= 600;
+      const gap = h < 520 ? 8 : 14;
+      const bw = row ? Math.min(240, (w - 32 - 2 * gap) / 3) : Math.min(460, w - 32);
+      const bh = row ? Math.min(150, h - 170) : h < 520 ? 74 : 92;
+      const top = row ? 92 : Math.max(96, h / 2 - (bh * 3 + gap * 2) / 2 - 10);
+      c.add(this.add.text(w / 2, top - 62, t('ui.god.title'), { fontFamily: FONT, fontSize: '30px', color: '#ffd36b', fontStyle: 'bold' }).setOrigin(0.5));
+      c.add(this.add.text(w / 2, top - 28, t('ui.god.sub'), { fontFamily: FONT, fontSize: '15px', color: '#c9cfe6', align: 'center', wordWrap: { width: w - 32 } }).setOrigin(0.5));
+      opts.forEach(([label, sub, fn], i) => {
+        if (row) this.button(c, w / 2 + (i - 1) * (bw + gap), top + bh / 2, bw, bh, label, fn, sub);
+        else this.button(c, w / 2, top + bh / 2 + i * (bh + gap), bw, bh, label, fn, sub);
+      });
+      const by = row ? top + bh + 26 : top + 3 * (bh + gap) + 24;
+      const close = this.add.text(w / 2, Math.min(by, h - 24), 'Fermer', { fontFamily: FONT, fontSize: '16px', color: '#8f97b8' })
+        .setOrigin(0.5).setPadding(16, 8).setInteractive({ useHandCursor: true }).on('pointerdown', () => this.closeGod());
+      c.add(close);
+    });
+    this.modalKeys = {
+      1: opts[0][2], 2: opts[1][2], 3: opts[2][2],
+      '&': opts[0][2], 'é': opts[1][2], '"': opts[2][2], // rangée de chiffres AZERTY sans Maj
+      Escape: () => this.closeGod(),
+    };
+  }
+
+  // Liste de toutes les cartes avec un compteur − n + chacune.
+  showGodCards() {
+    const god = this.game_.god;
+    const counts = god.currentCounts();
+    const rows = [
+      ...Object.entries(WEAPONS).map(([id, w]) => ({ id, name: w.name, max: GOD.weaponMax, icon: ASSETS.icons[id], weapon: true })),
+      ...Object.entries(PASSIVES).map(([id, ps]) => ({ id, name: ps.name, desc: ps.desc, max: GOD.passiveMax, icon: ASSETS.icons.passive })),
+    ];
+    const info = (r) => {
+      const n = counts[r.id];
+      if (r.weapon) return n === 0 ? 'Pas prise' : n <= 5 ? `Niv. ${n}` : `Niv. 5 + surcharge ×${n - 5}`;
+      return n === 0 ? r.desc : `${r.desc} ×${n}`;
+    };
+    const apply = () => { this.closeGod(); god.applyCounts(counts); this.game_.events.emit('toast', 'ui.god.cards'); };
+    const build = (c, w, h) => {
+      const cols = w >= 640 ? 2 : 1;
+      const perCol = Math.ceil(rows.length / cols);
+      const colW = Math.min(cols === 2 ? 380 : 440, (w - 32 - (cols - 1) * 16) / cols);
+      c.add(this.add.rectangle(0, 0, w, h, 0x05060c, 0.8).setOrigin(0, 0)); // cache le HUD derrière la liste
+      const header = h < 420 ? 70 : 84, footer = 64;
+      const rh = Phaser.Math.Clamp(Math.floor((h - header - footer - 16) / perCol), 34, 58);
+      const totalW = cols * colW + (cols - 1) * 16;
+      const top = Math.max(header, (h - perCol * rh - footer) / 2 + 20);
+      c.add(this.add.text(w / 2, top - 46, 'Pouvoirs à volonté', { fontFamily: FONT, fontSize: rh < 44 ? '20px' : '24px', color: '#ffd36b', fontStyle: 'bold' }).setOrigin(0.5));
+      c.add(this.add.text(w / 2, top - 18, 'Chaque + ajoute la carte une fois de plus.', { fontFamily: FONT, fontSize: '13px', color: '#c9cfe6' }).setOrigin(0.5));
+      rows.forEach((r, i) => {
+        const col = Math.floor(i / perCol), k = i % perCol;
+        const x0 = (w - totalW) / 2 + col * (colW + 16);
+        const y = top + k * rh + rh / 2;
+        c.add(this.add.rectangle(x0, y, colW, rh - 4, 0x10142a, 1).setOrigin(0, 0.5).setStrokeStyle(1, COLORS.light, 0.35));
+        const hasIcon = r.icon && this.textures.exists(r.icon);
+        if (hasIcon) c.add(this.add.image(x0 + 18, y, r.icon).setDisplaySize(22, 22));
+        const tx = x0 + (hasIcon ? 36 : 10);
+        const textW = colW - (tx - x0) - 128;
+        c.add(this.add.text(tx, y - (rh >= 44 ? 9 : 0), r.name, { fontFamily: FONT, fontSize: '14px', color: '#ffffff', fontStyle: '700', fixedWidth: textW }).setOrigin(0, 0.5));
+        if (rh >= 44) c.add(this.add.text(tx, y + 10, info(r), { fontFamily: FONT, fontSize: '11px', color: '#aab2d0', fixedWidth: textW }).setOrigin(0, 0.5));
+        const nTxt = this.add.text(x0 + colW - 64, y, String(counts[r.id]), { fontFamily: MONO, fontSize: '18px', color: counts[r.id] ? '#ffd36b' : '#6f7799', fontStyle: '600' }).setOrigin(0.5);
+        c.add(nTxt);
+        const step = (d) => {
+          counts[r.id] = Phaser.Math.Clamp(counts[r.id] + d, 0, r.max);
+          c.relayout();
+        };
+        const btn = (bx, label, d) => {
+          const b = this.add.rectangle(bx, y, 34, Math.min(34, rh - 8), 0x1d2547, 1).setStrokeStyle(1, COLORS.light, 0.8)
+            .setInteractive({ useHandCursor: true }).on('pointerdown', () => step(d));
+          c.add(b);
+          c.add(this.add.text(bx, y, label, { fontFamily: FONT, fontSize: '20px', color: '#ffffff', fontStyle: '700' }).setOrigin(0.5));
+        };
+        btn(x0 + colW - 106, '−', -1);
+        btn(x0 + colW - 22, '+', +1);
+      });
+      const fy = Math.min(top + perCol * rh + 34, h - 30);
+      this.button(c, w / 2 - 80, fy, 140, 44, 'Valider', apply);
+      this.button(c, w / 2 + 80, fy, 140, 44, 'Retour', () => this.showGodMenu());
+    };
+    this.makeModal(build);
+    this.modalKeys = { Enter: apply, Escape: () => this.showGodMenu() };
+  }
+
+  showOver({ victory, time, kills, level, god }) {
     this.makeModal((c, w, h) => {
       c.add(this.add.text(w / 2, h / 2 - 90, t(victory ? 'ui.win.title' : 'ui.death.title'), {
         fontFamily: FONT, fontSize: '28px', color: victory ? '#ffd36b' : '#ffffff', fontStyle: 'bold', align: 'center',
         wordWrap: { width: w - 40 },
       }).setOrigin(0.5));
-      c.add(this.add.text(w / 2, h / 2 - 30, `Survécu ${fmtTime(time)} · Créatures dissipées : ${kills}\nNiveau atteint : ${level}`, {
+      c.add(this.add.text(w / 2, h / 2 - 30, `Survécu ${fmtTime(time)} · Créatures dissipées : ${kills}\nNiveau atteint : ${level}${god ? ' · ✦ God mode' : ''}`, {
         fontFamily: FONT, fontSize: '16px', color: '#c9cfe6', align: 'center',
       }).setOrigin(0.5));
       this.button(c, w / 2, h / 2 + 50, 240, 56, t('ui.death.retry'), () => this.game_.restart());
@@ -248,6 +363,11 @@ export class UIScene extends Phaser.Scene {
   }
 
   onKey(e) {
+    // Easter egg clavier : taper L-U-M-E-N (lettres réelles, marche en AZERTY comme en QWERTY).
+    if (e.key && e.key.length === 1) {
+      this.secret = (this.secret + e.key.toUpperCase()).slice(-5);
+      if (this.secret === 'LUMEN') { this.secret = ''; if (this.game_.god.open()) return; }
+    }
     if (!this.modal || !this.modalKeys) return;
     const fn = this.modalKeys[e.key];
     if (fn) fn();
