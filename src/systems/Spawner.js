@@ -26,6 +26,8 @@ export class Spawner {
     if (this.stopped) return;
     const m = this.minute;
     const row = BALANCE.minutes[m];
+    // Arène fermée : flux de la dernière minute (réduit), quel que soit le chrono.
+    const flow = this.scene.arena ? BALANCE.minutes[BALANCE.minutes.length - 1] : row;
     const secInMinute = this.scene.elapsed - m * 60;
 
     (row.events || []).forEach((ev, i) => {
@@ -36,13 +38,13 @@ export class Spawner {
       }
     });
 
-    const maxAlive = Math.min(row.maxAlive, BALANCE.difficulty.maxAliveCap);
-    this.acc += row.spawnPerSec * dt;
+    const maxAlive = Math.min(flow.maxAlive, BALANCE.difficulty.maxAliveCap);
+    this.acc += flow.spawnPerSec * dt;
     while (this.acc >= 1) {
       this.acc -= 1;
       if (this.scene.enemies.countActive(true) < maxAlive) {
         const p = this.spawnPoint();
-        this.spawn(this.pick(row.mix), p.x, p.y);
+        this.spawn(this.pick(flow.mix), p.x, p.y);
       }
     }
   }

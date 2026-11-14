@@ -43,6 +43,11 @@ export class Lantern {
     tex.refresh();
   }
 
+  // Victoire : l'obscurité se dissipe doucement (l'aube), on voit le phare rallumé.
+  dawn(scene) {
+    scene.tweens.add({ targets: [this.mask, ...this.sides], alpha: 0.15, duration: 1600, ease: 'Sine.easeOut' });
+  }
+
   get charge() {
     return this.light / L.max;
   }

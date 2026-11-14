@@ -105,7 +105,7 @@ export class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     if (this.state !== 'play') return;
-    const dt = Math.min(delta, 50) / 1000; // évite les sauts après un onglet en arrière-plan
+    const dt = Math.min(delta, 100) / 1000; // évite les sauts après un onglet en arrière-plan
     this.elapsed += dt;
     const p = this.player;
     const cam = this.cameras.main;
@@ -136,6 +136,12 @@ export class GameScene extends Phaser.Scene {
         if (p.hurt(e.dmg)) {
           cam.shake(90, 0.005);
           this.juice.number(p.x, p.y - 20, e.dmg, '#ff6b6b');
+          // Un boss repousse Lumen : on ne peut pas rester coincé contre lui.
+          if (e.def.boss) {
+            const k = 70 / (d || 1);
+            const nx = p.x + (p.x - e.x) * k, ny = p.y + (p.y - e.y) * k;
+            if (!this.level?.isBlockedAt(nx, ny)) { p.setPosition(nx, ny); p.body.reset(nx, ny); }
+          }
         }
       }
       // Les créatures trop loin derrière sont replacées plus près.
@@ -481,7 +487,7 @@ export class GameScene extends Phaser.Scene {
 
   endRun(victory) {
     this.state = 'over';
-    if (victory) this.level?.lightLighthouse(this);
+    if (victory) { this.level?.lightLighthouse(this); this.lantern.dawn(this); }
     this.physics.pause();
     this.player.setVelocity(0, 0);
     this.events.emit('over', {
