@@ -14,6 +14,7 @@ import { Juice } from '../systems/Juice.js';
 import { Hazards } from '../systems/BossAI.js';
 import { applyVisual } from '../objects/visuals.js';
 import { ASSETS } from '../data/assets.js';
+import { GodMode } from '../systems/GodMode.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -21,13 +22,10 @@ export class GameScene extends Phaser.Scene {
   }
 
   create() {
-    // 'play' | 'levelup' | 'paused' | 'over'
+    // 'play' | 'levelup' | 'paused' | 'god' | 'over'
     this.state = 'play';
     this.elapsed = 0; // secondes de jeu (s'arrête en pause)
-    this.stats = {
-      dmgMult: 1, speedMult: 1, magnetMult: 1, cooldownMult: 1,
-      drainMult: 1, maxHpBonus: 0, regen: 0,
-    };
+    this.stats = this.baseStats();
     this.progress = { level: 1, xp: 0, xpNext: BALANCE.xpToNext(1), kills: 0 };
     this.passives = {}; // id -> niveau
     this.pendingLevelUps = 0;
@@ -72,6 +70,7 @@ export class GameScene extends Phaser.Scene {
     this.weapons = new Weapons(this);
     this.weapons.add('lantern'); // arme de départ
     this.spawner = new Spawner(this);
+    this.god = new GodMode(this); // easter egg, inactif tant qu'on ne l'ouvre pas
 
     const cam = this.cameras.main;
     cam.startFollow(this.player, true, 0.12, 0.12);
@@ -87,6 +86,13 @@ export class GameScene extends Phaser.Scene {
       this.game.events.off('blur', this.pauseGame, this);
       this.scale.off('resize', this.onResize, this);
     });
+  }
+
+  baseStats() {
+    return {
+      dmgMult: 1, speedMult: 1, magnetMult: 1, cooldownMult: 1,
+      drainMult: 1, maxHpBonus: 0, regen: 0,
+    };
   }
 
   applyZoom() {
@@ -119,7 +125,7 @@ export class GameScene extends Phaser.Scene {
       this.ground.setTilePosition(cam.worldView.x, cam.worldView.y);
     }
 
-    if (this.lantern.light <= 0) {
+    if (this.lantern.light <= 0 && !this.player.invincible) {
       p.hp = Math.max(0, p.hp - BALANCE.light.darkDmgPerSec * dt);
       if (!this.darkWarned) { this.darkWarned = true; this.events.emit('toast', 'ui.warning.dark'); }
     } else if (this.lantern.light > 10) {
@@ -173,6 +179,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.weapons.update(dt);
+    this.god.update(dt);
     this.updatePickups(dt);
     this.spawner.update(dt);
 
@@ -387,10 +394,14 @@ export class GameScene extends Phaser.Scene {
     }
     this.lantern.add(BALANCE.light.perLueur * o.value);
     if (!this.seenXpTuto) { this.seenXpTuto = true; this.events.emit('toast', 'ui.tuto.xp'); }
-    const pr = this.progress;
-    pr.xp += BALANCE.xpPerLueur * o.value;
     const m = Math.floor(this.elapsed / 60);
     this.lueursPerMinute[m] = (this.lueursPerMinute[m] || 0) + o.value;
+    this.gainXp(BALANCE.xpPerLueur * o.value);
+  }
+
+  gainXp(n) {
+    const pr = this.progress;
+    pr.xp += n;
     while (pr.xp >= pr.xpNext) {
       pr.xp -= pr.xpNext;
       pr.level++;
@@ -495,6 +506,7 @@ export class GameScene extends Phaser.Scene {
       time: this.elapsed,
       kills: this.progress.kills,
       level: this.progress.level,
+      god: this.god.used,
     });
   }
 

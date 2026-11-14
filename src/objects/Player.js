@@ -30,7 +30,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
 
   // Renvoie true si le coup a porté.
   hurt(n) {
-    if (this.iframes > 0 || this.hp <= 0) return false;
+    if (this.invincible || this.iframes > 0 || this.hp <= 0) return false;
     this.hp = Math.max(0, this.hp - n);
     this.iframes = BALANCE.player.iframes;
     flash(this, 0xff5a36, 110);

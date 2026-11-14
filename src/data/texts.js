@@ -25,6 +25,13 @@ export const TEXTS = {
   'ui.arena.close': 'Un mur de brume se referme autour du phare…',
   'ui.arena.soon': 'Rejoins le phare : la brume va tout fermer !',
   'ui.pause': 'La lanterne veille…',
+  // Easter egg (God mode) : taper LUMEN au clavier, ou toucher 5 fois le chrono.
+  'ui.god.title': '✦ GOD MODE ✦',
+  'ui.god.sub': 'Tu as trouvé le secret du gardien.',
+  'ui.god.rain': 'Une pluie de Lueurs tombe du ciel !',
+  'ui.god.max': 'Niveau max atteint : toutes tes flammes sont au maximum.',
+  'ui.god.cards': 'Pouvoirs appliqués !',
+  'ui.god.ultimate': 'GOD MODE ULTIME : Lumen devient le phare !',
 };
 
 export const t = (key) => TEXTS[key] ?? key;
