@@ -15,6 +15,9 @@ const config = {
     width: window.innerWidth,
     height: window.innerHeight,
   },
+  // panicMax bas : après le chargement ou un retour d'onglet, Phaser bride le temps
+  // pendant 120 images par défaut ; sur un appareil lent ça ralentissait tout le jeu.
+  fps: { panicMax: 10 },
   physics: {
     default: 'arcade',
     // fixedStep false : la physique suit le temps réel, le jeu ne ralentit

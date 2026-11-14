@@ -23,7 +23,7 @@ export class Enemy extends Phaser.Physics.Arcade.Sprite {
     this.radius = def.radius;
     this.maxHp = def.hp * (def.fixedHp ? 1 : hpMult);
     this.hp = this.maxHp;
-    this.dmg = def.dmg * dmgMult;
+    this.dmg = def.dmg * (def.fixedHp ? 1 : dmgMult); // boss : dégâts fixes
     this.speed = def.speed * Phaser.Math.FloatBetween(0.9, 1.1);
     this.zigPhase = Math.random() * Math.PI * 2;
     this.orbHitAt = 0;

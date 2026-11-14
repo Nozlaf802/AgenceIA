@@ -105,7 +105,7 @@ export class GameScene extends Phaser.Scene {
 
   update(time, delta) {
     if (this.state !== 'play') return;
-    const dt = Math.min(delta, 50) / 1000; // évite les sauts après un onglet en arrière-plan
+    const dt = Math.min(delta, 100) / 1000; // évite les sauts après un onglet en arrière-plan
     this.elapsed += dt;
     const p = this.player;
     const cam = this.cameras.main;
@@ -136,6 +136,12 @@ export class GameScene extends Phaser.Scene {
         if (p.hurt(e.dmg)) {
           cam.shake(90, 0.005);
           this.juice.number(p.x, p.y - 20, e.dmg, '#ff6b6b');
+          // Un boss repousse Lumen : on ne peut pas rester coincé contre lui.
+          if (e.def.boss) {
+            const k = 70 / (d || 1);
+            const nx = p.x + (p.x - e.x) * k, ny = p.y + (p.y - e.y) * k;
+            if (!this.level?.isBlockedAt(nx, ny)) { p.setPosition(nx, ny); p.body.reset(nx, ny); }
+          }
         }
       }
       // Les créatures trop loin derrière sont replacées plus près.
@@ -170,8 +176,10 @@ export class GameScene extends Phaser.Scene {
     this.updatePickups(dt);
     this.spawner.update(dt);
 
+    if (this.arena) this.updateArena(dt);
+
     if (p.hp <= 0) this.endRun(false);
-    else if (this.elapsed >= BALANCE.run.durationSec) this.endRun(true);
+    else if (!this.boss && !this.bossBeaten && this.elapsed >= BALANCE.run.noBossVictorySec) this.endRun(true);
   }
 
   // ---------- Créatures : requêtes utilisées par les armes ----------
@@ -222,6 +230,72 @@ export class GameScene extends Phaser.Scene {
     e.kill();
   }
 
+  // 8:50 : le mur de brume se referme sur l'arène du boss (ou autour de Lumen
+  // dans l'arène infinie). Lumen est ramené dedans, les créatures dehors se dissipent.
+  closeArena() {
+    const lv = this.level;
+    const cam = this.cameras.main;
+    if (lv?.arena) this.arena = Phaser.Geom.Rectangle.Clone(lv.arena);
+    else {
+      const w = Math.max(1536, cam.worldView.width + 200), h = Math.max(960, cam.worldView.height + 200);
+      this.arena = new Phaser.Geom.Rectangle(this.player.x - w / 2, this.player.y - h / 2, w, h);
+    }
+    const a = this.arena;
+    const p = this.player;
+    if (!Phaser.Geom.Rectangle.Contains(a, p.x, p.y)) {
+      // Ramené au bord intérieur le plus proche, sur une case libre.
+      const pt = this.insideArena(p.x, p.y, 60);
+      p.setPosition(pt.x, pt.y);
+      p.body.reset(pt.x, pt.y);
+      cam.flash(400, 20, 24, 50);
+    }
+    this.enemies.getChildren().forEach((e) => {
+      if (e.active && !Phaser.Geom.Rectangle.Contains(a, e.x, e.y)) { this.juice.burst(e.x, e.y, 0, e.radius); e.kill(); }
+    });
+    this.arenaWall = this.add.graphics().setDepth(DEPTH.glow - 2);
+    this.arenaT = 0;
+    cam.shake(500, 0.006);
+    this.events.emit('toast', 'ui.arena.close');
+  }
+
+  insideArena(x, y, margin) {
+    const a = this.arena;
+    let px = Phaser.Math.Clamp(x, a.x + margin, a.right - margin);
+    let py = Phaser.Math.Clamp(y, a.y + margin, a.bottom - margin);
+    // Si la case est bloquée, on glisse vers le centre de l'arène.
+    for (let k = 0; k < 20 && this.level?.isBlockedAt(px, py); k++) {
+      px += (a.centerX - px) * 0.15;
+      py += (a.centerY - py) * 0.15;
+    }
+    return { x: px, y: py };
+  }
+
+  updateArena(dt) {
+    const a = this.arena;
+    const p = this.player;
+    const m = p.radius;
+    if (p.x < a.x + m || p.x > a.right - m || p.y < a.y + m || p.y > a.bottom - m) {
+      p.x = Phaser.Math.Clamp(p.x, a.x + m, a.right - m);
+      p.y = Phaser.Math.Clamp(p.y, a.y + m, a.bottom - m);
+    }
+    this.enemies.getChildren().forEach((e) => {
+      if (!e.active) return;
+      e.x = Phaser.Math.Clamp(e.x, a.x, a.right);
+      e.y = Phaser.Math.Clamp(e.y, a.y, a.bottom);
+    });
+    // Mur de brume : bandes douces qui ondulent sur le contour.
+    this.arenaT += dt;
+    const g = this.arenaWall;
+    g.clear();
+    const t = this.arenaT;
+    for (let i = 0; i < 4; i++) {
+      const w = 70 - i * 16;
+      const alpha = (0.1 + i * 0.07) * (0.85 + 0.15 * Math.sin(t * 2 + i));
+      g.lineStyle(w, i < 2 ? 0x3a3f6b : 0x8f94c8, alpha);
+      g.strokeRect(a.x - w / 2 + 8, a.y - w / 2 + 8, a.width + w - 16, a.height + w - 16);
+    }
+  }
+
   setBoss(e) {
     this.boss = e;
     this.cameras.main.shake(250, 0.006);
@@ -233,6 +307,7 @@ export class GameScene extends Phaser.Scene {
     this.hazards.clear();
     this.cameras.main.shake(300, 0.01);
     this.juice.impact(e.x, e.y, 'fx-dissipation', 3);
+    if (e.def.final) { this.finalBossDown(e); return; }
     this.dropPickup('chest', e.x, e.y, 1);
     this.dropPickup('oil', e.x + 30, e.y + 10, 1);
     this.events.emit('toast', 'ui.boss.down');
@@ -393,9 +468,26 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  // La Marée est vaincue : la brume se dissipe, puis le phare se rallume (victoire).
+  finalBossDown(e) {
+    this.bossBeaten = true;
+    this.events.emit('toast', 'ui.boss.final');
+    this.cameras.main.flash(800, 255, 230, 170);
+    this.enemies.getChildren().forEach((o) => {
+      if (o.active && o !== e) { this.juice.burst(o.x, o.y, 0, o.radius); o.kill(); }
+    });
+    this.spawner.stopped = true;
+    const tryEnd = () => {
+      if (this.state === 'over') return;
+      if (this.state === 'play') this.endRun(true);
+      else this.time.delayedCall(400, tryEnd); // attend la fin d'un choix de carte ou d'une pause
+    };
+    this.time.delayedCall(1800, tryEnd);
+  }
+
   endRun(victory) {
     this.state = 'over';
-    if (victory) this.level?.lightLighthouse(this);
+    if (victory) { this.level?.lightLighthouse(this); this.lantern.dawn(this); }
     this.physics.pause();
     this.player.setVelocity(0, 0);
     this.events.emit('over', {

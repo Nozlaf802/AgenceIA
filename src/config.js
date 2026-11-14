@@ -6,7 +6,7 @@ export const VIEW = {
   refWidth: 1280,
   refHeight: 720,
   minZoom: 0.6,
-  maxZoom: 1.25,
+  maxZoom: 2, // jusqu'en 2560×1440 : même surface de jeu visible que sur 1280×720 (#4)
   tileSize: 64,
 };
 

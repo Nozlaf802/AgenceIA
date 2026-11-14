@@ -8,6 +8,7 @@ import { DEPTH } from '../config.js';
 //    propriété de calque « collides » (tout le calque bloque) ;
 //  - calque au-dessus des personnages : propriété « depth » (nombre) ou « above » ;
 //  - départ : objet de type « player_start » ou nommé « joueur » ;
+//  - boss : objet « boss_spawn » (point) et « boss_arena » (rectangle, propriété fermeture_sec) ;
 //  - points d'apparition : objets de type « spawn » ;
 //  - lucioles : rectangles de type « firefly_zone » (propriété « poids »).
 const props = (o) => Object.fromEntries((o?.properties || []).map((p) => [p.name, p.value]));
@@ -85,6 +86,14 @@ export function buildMap(scene, mapKey) {
 
   const level = new Level(map, walls, start, spawns, fireflyZones);
   level.layers = layers;
+  // Boss : point « boss_spawn » et rectangle « boss_arena » (fermeture_sec = mur de brume).
+  const bossObj = objects.find((o) => typeOf(o) === 'boss_spawn');
+  if (bossObj) level.bossSpawn = { x: bossObj.x, y: bossObj.y };
+  const arenaObj = objects.find((o) => typeOf(o) === 'boss_arena');
+  if (arenaObj) {
+    level.arena = new Phaser.Geom.Rectangle(arenaObj.x, arenaObj.y, arenaObj.width, arenaObj.height);
+    level.arenaCloseSec = props(arenaObj).fermeture_sec ?? 530;
+  }
   level.props = propImages;
   return level;
 }

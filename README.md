@@ -6,7 +6,7 @@ repousse les créatures de brume avec le cercle de lumière de sa lanterne.
 ## Jouer
 
 Une fois GitHub Pages activé, le jeu est en ligne sur
-**https://nozlaf802.github.io/agenceia/** (mis à jour à chaque fusion dans `main`).
+**https://nozlaf802.github.io/AgenceIA/** (mis à jour à chaque fusion dans `main`).
 
 - Ordinateur : flèches, ZQSD ou WASD pour bouger, P ou Échap pour la pause.
 - Mobile : pose le doigt n'importe où et glisse (joystick flottant).

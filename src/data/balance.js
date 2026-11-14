@@ -3,7 +3,9 @@
 
 export const BALANCE = {
   run: {
-    durationSec: 600, // 10 minutes
+    durationSec: 600, // 10 minutes (le boss arrive à 9:00)
+    // Victoire = battre La Marée. Filet de sécurité si le boss n'a pas pu apparaître.
+    noBossVictorySec: 660,
   },
 
   player: {
@@ -46,7 +48,7 @@ export const BALANCE = {
 
   difficulty: {
     hpPerMinute: 0.22,
-    dmgPerMinute: 0.15,
+    dmgPerMinute: 0.12, // v1.3 : 0,15 -> 0,12
     maxAliveCap: 200, // plafond perf navigateur
   },
 
@@ -66,19 +68,23 @@ export const BALANCE = {
     { spawnPerSec: 3.5, maxAlive: 130, mix: { E01: 0.4, E02: 0.2, E04: 0.2, E05: 0.2 },
       events: [{ at: 30, type: 'text', key: 'ui.tuto.light' }, { at: 0, type: 'ring', enemy: 'E01', count: 28 }] }, // v1.2 : 36 -> 28 (QA #12)
     { spawnPerSec: 4.5, maxAlive: 170, mix: { E01: 0.3, E03: 0.25, E05: 0.2, E06: 0.25 },
-      events: [{ at: 0, type: 'ring', enemy: 'E01', count: 36 }, { at: 30, type: 'ring', enemy: 'E04', count: 10 }] }, // v1.2 : 48 -> 36 (QA #12)
+      events: [{ at: 0, type: 'ring', enemy: 'E01', count: 36 }, { at: 30, type: 'swarm', enemy: 'E04', count: 8 }] }, // v1.2 : 48 -> 36 (QA #12) ; v1.3 : Chapes en groupe d'un côté, plus en anneau
     { spawnPerSec: 3.6, maxAlive: 140, mix: { E01: 0.5, E02: 0.5 },
       events: [{ at: 0, type: 'boss', enemy: 'MB2' }, { at: 20, type: 'ring', enemy: 'E02', count: 40 }] }, // 6:00 La Tisseuse
     { spawnPerSec: 4.5, maxAlive: 180, mix: { E01: 0.25, E04: 0.2, E07: 0.2, E08: 0.35 },
-      events: [{ at: 0, type: 'ring', enemy: 'E01', count: 40 }, { at: 40, type: 'ring', enemy: 'E04', count: 10 }] },
-    { spawnPerSec: 5.5, maxAlive: 220, mix: { E01: 0.2, E02: 0.2, E03: 0.3, E04: 0.3 },
+      events: [{ at: 0, type: 'ring', enemy: 'E01', count: 32 }, { at: 40, type: 'swarm', enemy: 'E04', count: 8 }] }, // v1.3 : anneau 40 -> 32, Chapes en groupe
+    // v1.3 : minute 8 adoucie (le bot mourait entre 8:30 et 9:00) : 5,5 -> 4,5/s, anneau 48 -> 32 à 8:20.
+    { spawnPerSec: 4.5, maxAlive: 180, mix: { E01: 0.2, E02: 0.2, E03: 0.3, E04: 0.3 },
       events: [
         { at: 0, type: 'swarm', enemy: 'E03', count: 30, from: 'left' },
         { at: 0, type: 'swarm', enemy: 'E03', count: 30, from: 'right' },
-        { at: 30, type: 'ring', enemy: 'E01', count: 48 },
+        { at: 20, type: 'ring', enemy: 'E01', count: 32 },
+        { at: 35, type: 'text', key: 'ui.arena.soon' },
+        { at: 50, type: 'arena' }, // 8:50 : mur de brume (fermeture_sec de la carte)
       ] },
-    // Minute 9 : le boss arrivera ici. En attendant, une dernière vague plus calme.
-    { spawnPerSec: 4, maxAlive: 160, mix: { E01: 0.4, E02: 0.3, E04: 0.3 },
-      events: [{ at: 0, type: 'text', key: 'ui.warning.final' }, { at: 10, type: 'ring', enemy: 'E04', count: 16 }] },
+    // Minute 9 : boss La Marée dans l'arène. Flux réduit, c'est elle qui invoque.
+    // La partie se gagne en la battant (le chrono continue après 10:00).
+    { spawnPerSec: 1.6, maxAlive: 60, mix: { E01: 0.5, E02: 0.3, E04: 0.2 },
+      events: [{ at: 0, type: 'boss', enemy: 'B01' }] },
   ],
 };
