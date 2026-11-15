@@ -2,6 +2,10 @@ import Phaser from 'phaser';
 import { COLORS, FONTS, setupHudCamera, viewSize } from '../config.js';
 import { ASSETS } from '../data/assets.js';
 import { t } from '../data/texts.js';
+import { VERSION } from '../data/version.js';
+import { deviceKey } from '../input/device.js';
+import { SFX } from '../systems/Sound.js';
+import { SpeakerButton } from '../objects/SpeakerButton.js';
 
 const FONT = FONTS.title;
 const MONO = FONTS.mono;
@@ -18,6 +22,8 @@ export class TitleScene extends Phaser.Scene {
     this.events.once('shutdown', () => this.scale.off('resize', this.build, this));
     this.input.keyboard.once('keydown-ENTER', () => this.start());
     this.input.keyboard.once('keydown-SPACE', () => this.start());
+    this.input.keyboard.on('keydown-M', () => SFX.toggleMute());
+    SFX.startAmbience(); // démarre au premier geste du joueur
   }
 
   build() {
@@ -49,14 +55,19 @@ export class TitleScene extends Phaser.Scene {
     bg.on('pointerout', () => bg.setFillStyle(0x10142a));
     bg.on('pointerup', () => this.start());
 
-    this.add.text(w / 2, h - 22, 'ZQSD / WASD / flèches, ou glisse le doigt · P = pause · prototype', {
-      fontFamily: FONT, fontSize: '12px', color: '#6f7799', align: 'center', wordWrap: { width: w - 32 },
-    }).setOrigin(0.5);
+    // Aide des contrôles adaptée à l'appareil (tactile ou clavier).
+    this.add.text(w / 2, h - 40, t(deviceKey('ui.controls')), {
+      fontFamily: FONT, fontSize: '13px', color: '#aab2d0', align: 'center', wordWrap: { width: w - 32 },
+    }).setOrigin(0.5, 1);
+    this.add.text(w - 12, h - 10, `v${VERSION}`, { fontFamily: MONO, fontSize: '12px', color: '#6f7799' }).setOrigin(1, 1);
+    new SpeakerButton(this, w - 30, 30);
   }
 
   start() {
     if (this.starting) return;
     this.starting = true;
+    SFX.unlock();
+    SFX.play('click');
     this.scene.start('Game');
   }
 }
