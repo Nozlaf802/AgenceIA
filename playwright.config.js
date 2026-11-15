@@ -21,7 +21,7 @@ export default defineConfig({
     },
   },
   projects: [
-    { name: 'ordi', use: { viewport: { width: 1366, height: 768 } }, testMatch: /(jeu-ordi|bot|perf)\.spec\.js/ },
+    { name: 'ordi', use: { viewport: { width: 1366, height: 768 } }, testMatch: /(jeu-ordi|v1|bot|perf)\.spec\.js/ },
     { name: 'iphone', use: { ...devices['iPhone 13'], defaultBrowserType: 'chromium' }, testMatch: /jeu-mobile\.spec\.js/ },
     { name: 'pixel', use: { ...devices['Pixel 7'] }, testMatch: /jeu-mobile\.spec\.js/ },
   ],

@@ -15,6 +15,9 @@ import { Hazards } from '../systems/BossAI.js';
 import { applyVisual } from '../objects/visuals.js';
 import { ASSETS } from '../data/assets.js';
 import { GodMode } from '../systems/GodMode.js';
+import { SFX } from '../systems/Sound.js';
+import { load, save } from '../systems/Storage.js';
+import { computeScore } from '../data/score.js';
 
 export class GameScene extends Phaser.Scene {
   constructor() {
@@ -81,6 +84,13 @@ export class GameScene extends Phaser.Scene {
 
     this.game.events.on('blur', this.pauseGame, this);
     this.input.keyboard.on('keydown-P', this.togglePause, this);
+    this.input.keyboard.on('keydown-M', () => SFX.toggleMute());
+    SFX.startAmbience();
+    SFX.setDucked(false);
+    // Bruitage d'arrivée des boss (mêmes annonces que les messages à l'écran).
+    this.events.on('toast', (key) => {
+      if (/^ui\.boss\.(MB\d|B\d+)$/.test(key)) SFX.play('boss');
+    });
     // Échap arrête la pluie d'XP du God mode si elle tombe, sinon met en pause.
     this.input.keyboard.on('keydown-ESC', () => (this.god.rain ? this.god.stopRain() : this.togglePause()));
     this.events.once('shutdown', () => {
@@ -143,6 +153,7 @@ export class GameScene extends Phaser.Scene {
       if (d < e.radius + p.radius && !e.isFrozen(this.elapsed)) {
         if (p.hurt(e.dmg)) {
           cam.shake(90, 0.005);
+          SFX.play('hurt');
           this.juice.number(p.x, p.y - 20, e.dmg, '#ff6b6b');
           // Un boss repousse Lumen : on ne peut pas rester coincé contre lui.
           if (e.def.boss) {
@@ -229,6 +240,7 @@ export class GameScene extends Phaser.Scene {
     if (!quiet) this.juice.number(e.x, e.y - e.radius, dmg);
     if (!dead) return;
     this.juice.burst(e.x, e.y, e.def.color, e.radius);
+    SFX.play('kill');
     this.progress.kills++;
     this.lueurAcc += e.def.lueurs;
     const n = Math.floor(this.lueurAcc);
@@ -380,11 +392,13 @@ export class GameScene extends Phaser.Scene {
 
   collect(o) {
     if (o.kind === 'luciole') {
+      SFX.play('pickup');
       this.lantern.add(BALANCE.light.firefly);
       return;
     }
     if (o.kind === 'chest') {
       this.events.emit('toast', 'ui.pickup.chest');
+      SFX.play('chime');
       this.pendingLevelUps++;
       if (this.state === 'play') this.openLevelUp();
       return;
@@ -392,8 +406,10 @@ export class GameScene extends Phaser.Scene {
     if (o.kind === 'oil') {
       this.lantern.add(BALANCE.light.oil);
       this.events.emit('toast', 'ui.pickup.oil');
+      SFX.play('chime');
       return;
     }
+    SFX.play('pickup');
     this.lantern.add(BALANCE.light.perLueur * o.value);
     if (!this.seenXpTuto) { this.seenXpTuto = true; this.events.emit('toast', 'ui.tuto.xp'); }
     const m = Math.floor(this.elapsed / 60);
@@ -442,6 +458,8 @@ export class GameScene extends Phaser.Scene {
     this.state = 'levelup';
     this.physics.pause();
     this.controls.joystick.reset();
+    SFX.play('levelup');
+    SFX.setDucked(true);
     this.events.emit('levelup', this.rollCards());
   }
 
@@ -460,6 +478,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.state = 'play';
     this.physics.resume();
+    SFX.setDucked(false);
   }
 
   // ---------- Pause / fin ----------
@@ -468,6 +487,7 @@ export class GameScene extends Phaser.Scene {
     this.state = 'paused';
     this.physics.pause();
     this.controls.joystick.reset();
+    SFX.setDucked(true);
     this.events.emit('pause', true);
   }
 
@@ -475,6 +495,7 @@ export class GameScene extends Phaser.Scene {
     if (this.state === 'paused') {
       this.state = 'play';
       this.physics.resume();
+      SFX.setDucked(false);
       this.events.emit('pause', false);
     } else {
       this.pauseGame();
@@ -503,13 +524,16 @@ export class GameScene extends Phaser.Scene {
     if (victory) { this.level?.lightLighthouse(this); this.lantern.dawn(this); }
     this.physics.pause();
     this.player.setVelocity(0, 0);
-    this.events.emit('over', {
-      victory,
-      time: this.elapsed,
-      kills: this.progress.kills,
-      level: this.progress.level,
-      god: this.god.used,
-    });
+    SFX.play(victory ? 'victory' : 'death');
+    SFX.setDucked(true);
+    const run = { victory, time: this.elapsed, kills: this.progress.kills, level: this.progress.level };
+    const score = computeScore(run);
+    // Meilleur score local. Une partie en God mode n'est pas enregistrée (triche).
+    const prevBest = load('best', 0) || 0;
+    const god = this.god.used;
+    const record = !god && score > prevBest;
+    if (record) save('best', score);
+    this.events.emit('over', { ...run, god, score, best: record ? score : prevBest, record, firstRun: prevBest === 0 });
   }
 
   restart() {

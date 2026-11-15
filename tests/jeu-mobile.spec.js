@@ -15,6 +15,15 @@ test.describe('Jeu sur mobile', () => {
     vp = page.viewportSize();
   });
 
+  test('aide des contrôles tactile sur l\'écran titre et au premier conseil', async ({ page }) => {
+    await page.goto('./');
+    await page.waitForFunction(() => window.__GAME__?.scene?.getScene('Title')?.sys?.isActive());
+    const texts = await page.evaluate(() => window.__GAME__.scene.getScene('Title').children.list
+      .filter((o) => o.type === 'Text').map((o) => o.text).join(' '));
+    expect(texts).toMatch(/glisse le doigt/);
+    expect(texts).not.toMatch(/ZQSD/);
+  });
+
   test('joystick : déplace, s\'arrête au relâché, analogique', async ({ page }) => {
     const cx = vp.width / 2, cy = vp.height * 0.7;
     let a = await state(page);

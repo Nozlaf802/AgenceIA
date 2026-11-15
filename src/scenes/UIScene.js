@@ -4,6 +4,10 @@ import { ASSETS } from '../data/assets.js';
 import { t } from '../data/texts.js';
 import { WEAPONS, PASSIVES } from '../data/upgrades.js';
 import { GOD } from '../systems/GodMode.js';
+import { SFX } from '../systems/Sound.js';
+import { SpeakerButton } from '../objects/SpeakerButton.js';
+import { VERSION, CHANNEL_URL } from '../data/version.js';
+import { deviceKey } from '../input/device.js';
 
 const FONT = FONTS.title;
 const MONO = FONTS.mono;
@@ -69,6 +73,7 @@ export class UIScene extends Phaser.Scene {
     this.pauseBtn = this.add.text(0, 0, '❚❚', { ...style, fontSize: '22px' })
       .setOrigin(1, 0).setInteractive({ useHandCursor: true })
       .on('pointerdown', () => this.game_.togglePause());
+    this.speaker = new SpeakerButton(this, 0, 0).setDepth(200);
 
     // Couches modales (pause, montée de niveau, fin), reconstruites à la demande.
     this.modal = null;
@@ -98,6 +103,7 @@ export class UIScene extends Phaser.Scene {
     this.killIcon?.setDisplaySize(16, 16);
     this.levelText.setPosition(width - 12, 10);
     this.pauseBtn.setPosition(width - 14, 30);
+    this.speaker.setPosition(width - 66, 44);
     this.rainBtn.setPosition(width - 10, 62);
     this.hpIcon?.setPosition(26, 25);
     this.lightIcon?.setPosition(26, 47);
@@ -157,6 +163,8 @@ export class UIScene extends Phaser.Scene {
   }
 
   toast(key) {
+    // Premier conseil : contrôles adaptés à l'appareil (doigt ou clavier).
+    if (key === 'ui.tuto.move') key = deviceKey(key);
     this.toastText.setText(t(key)).setAlpha(1);
     this.tweens.killTweensOf(this.toastText);
     this.tweens.add({ targets: this.toastText, alpha: 0, delay: 2800, duration: 600 });
@@ -171,6 +179,9 @@ export class UIScene extends Phaser.Scene {
 
   makeModal(build) {
     this.closeModal();
+    // Un message en cours ne doit pas passer par-dessus la fenêtre.
+    this.tweens.killTweensOf(this.toastText);
+    this.toastText.setAlpha(0);
     const c = this.add.container(0, 0).setDepth(100);
     c.relayout = () => {
       c.removeAll(true);
@@ -214,7 +225,7 @@ export class UIScene extends Phaser.Scene {
     subTxt?.setY(top + txt.height + 6);
     bg.on('pointerover', () => bg.setFillStyle(0x1d2547));
     bg.on('pointerout', () => bg.setFillStyle(0x10142a));
-    bg.on('pointerdown', onClick);
+    bg.on('pointerdown', () => { SFX.play('click'); onClick(); });
     c.add(items);
     return bg;
   }
@@ -224,6 +235,10 @@ export class UIScene extends Phaser.Scene {
       c.add(this.add.text(w / 2, h / 2 - 50, 'PAUSE', { fontFamily: FONT, fontSize: '34px', color: '#fff', fontStyle: 'bold' }).setOrigin(0.5));
       c.add(this.add.text(w / 2, h / 2 - 10, t('ui.pause'), { fontFamily: FONT, fontSize: '16px', color: '#ffe3a8' }).setOrigin(0.5));
       this.button(c, w / 2, h / 2 + 50, 220, 52, 'Reprendre', () => this.game_.togglePause());
+      c.add(this.add.text(w / 2, h - 40, t(deviceKey('ui.controls')), {
+        fontFamily: FONT, fontSize: '13px', color: '#aab2d0', align: 'center', wordWrap: { width: w - 32 },
+      }).setOrigin(0.5, 1));
+      c.add(this.add.text(w - 12, h - 10, `v${VERSION}`, { fontFamily: MONO, fontSize: '12px', color: '#6f7799' }).setOrigin(1, 1));
     });
     this.modalKeys = { Enter: () => this.game_.togglePause(), ' ': () => this.game_.togglePause() };
   }
@@ -363,16 +378,49 @@ export class UIScene extends Phaser.Scene {
     this.modalKeys = { Enter: apply, Escape: () => this.showGodMenu() };
   }
 
-  showOver({ victory, time, kills, level, god }) {
+  // Écran de fin : score, meilleur score local, rejouer, et retour vers la chaîne.
+  showOver({ victory, time, kills, level, god, score, best, record }) {
+    this.lastOver = { victory, score, best, record, god };
+    const openEpisode = () => {
+      // Ouvre la chaîne dans un nouvel onglet ; si le navigateur bloque, on y va directement.
+      const win = window.open(CHANNEL_URL, '_blank', 'noopener');
+      if (!win) window.location.href = CHANNEL_URL;
+    };
     this.makeModal((c, w, h) => {
-      c.add(this.add.text(w / 2, h / 2 - 90, t(victory ? 'ui.win.title' : 'ui.death.title'), {
-        fontFamily: FONT, fontSize: '28px', color: victory ? '#ffd36b' : '#ffffff', fontStyle: 'bold', align: 'center',
-        wordWrap: { width: w - 40 },
-      }).setOrigin(0.5));
-      c.add(this.add.text(w / 2, h / 2 - 30, `Survécu ${fmtTime(time)} · Créatures dissipées : ${kills}\nNiveau atteint : ${level}${god ? ' · ✦ God mode' : ''}`, {
-        fontFamily: FONT, fontSize: '16px', color: '#c9cfe6', align: 'center',
-      }).setOrigin(0.5));
-      this.button(c, w / 2, h / 2 + 50, 240, 56, t('ui.death.retry'), () => this.game_.restart());
+      const compact = h < 520;
+      const row = compact && w >= 560; // paysage bas : boutons côte à côte
+      const blockH = row ? 290 : compact ? 380 : 420;
+      // Sous le HUD (chrono, barres) pour ne jamais le chevaucher.
+      let y = Math.max(row ? 66 : 80, (h - blockH) / 2);
+      const txt = (yy, str, size, color, extra = {}) => {
+        const o = this.add.text(w / 2, yy, str, {
+          fontFamily: FONT, fontSize: size, color, align: 'center', wordWrap: { width: w - 40 }, ...extra,
+        }).setOrigin(0.5, 0);
+        c.add(o);
+        return o;
+      };
+      y += txt(y, t(victory ? 'ui.win.title' : 'ui.death.title'), row ? '22px' : compact ? '24px' : '28px', victory ? '#ffd36b' : '#ffffff', { fontStyle: 'bold' }).height + 10;
+      txt(y, t('ui.over.score').toUpperCase(), '13px', '#aab2d0', { fontFamily: MONO });
+      y += 18;
+      y += txt(y, String(score), row ? '34px' : compact ? '40px' : '52px', '#ffd97a', { fontFamily: MONO, fontStyle: '600' }).height + 2;
+      const bestLine = god ? t('ui.over.godNoSave')
+        : record ? `✦ ${t('ui.over.record')} ✦` : `${t('ui.over.best')} : ${best}`;
+      y += txt(y, bestLine, '15px', record ? '#5ee8ff' : '#c9cfe6', { fontStyle: record ? '700' : 'normal' }).height + 8;
+      y += txt(y, `Survécu ${fmtTime(time)} · ${kills} créatures dissipées · niveau ${level}`, '14px', '#8f97b8').height + (compact ? 16 : 24);
+      const bw = row ? Math.min(310, (w - 56) / 2) : Math.min(320, w - 40);
+      const bh = compact ? 50 : 56;
+      if (row) {
+        this.button(c, w / 2 - bw / 2 - 8, y + bh / 2, bw, bh, t('ui.death.retry'), () => this.game_.restart());
+        this.overEpisodeBtn = this.button(c, w / 2 + bw / 2 + 8, y + bh / 2, bw, bh, `▶ ${t('ui.over.episode')}`, openEpisode);
+        y += bh + 12;
+      } else {
+        this.button(c, w / 2, y + bh / 2, bw, bh, t('ui.death.retry'), () => this.game_.restart());
+        y += bh + 12;
+        this.overEpisodeBtn = this.button(c, w / 2, y + bh / 2, bw, bh, `▶ ${t('ui.over.episode')}`, openEpisode);
+        y += bh + 10;
+      }
+      this.overEpisodeBtn.setStrokeStyle(2, 0xff5a36, 0.95);
+      txt(y, t('ui.over.channel'), '12px', '#8f97b8');
     });
     this.modalKeys = { Enter: () => this.game_.restart(), ' ': () => this.game_.restart() };
   }
